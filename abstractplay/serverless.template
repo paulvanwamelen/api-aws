@@ -3,24 +3,105 @@
   "Transform" : "AWS::Serverless-2016-10-31",
   "Description" : "An AWS Serverless Application.",
 
+  "Parameters": {
+	"dbHost": {
+		"Type": "String"
+	},
+	"dbDb": {
+		"Type": "String"
+	},
+	"dbUser": {
+		"Type": "String"
+	},
+	"dbPword": {
+		"Type": "String"
+	},
+	"secGroup": {
+		"Type": "String"
+	},
+	"subnet1": {
+		"Type": "String"
+	},
+	"subnet2": {
+		"Type": "String"
+	},
+	"subnet3": {
+		"Type": "String"
+	}
+  },
+
   "Resources" : {
 
-    "Get" : {
+    "RootGet" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "abstractplay::abstractplay.Functions::Get",
+        "Handler": "abstractplay::abstractplay.Functions::RootGet",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
-        "Policies": [ "AWSLambdaBasicExecutionRole" ],
+        "Policies": [ "AWSLambdaBasicExecutionRole", "AWSLambdaVPCAccessExecutionRole" ],
+		"VpcConfig": {
+			"SecurityGroupIds": [{ "Ref": "secGroup" }],
+			"SubnetIds": [
+				{ "Ref": "subnet1" },
+				{ "Ref": "subnet2" },
+				{ "Ref": "subnet3" }
+			]
+		},
+		"Environment": {
+			"Variables": {
+				"db_server": { "Ref": "dbHost" },
+				"db_database": { "Ref": "dbDb" },
+				"db_username": { "Ref": "dbUser" },
+				"db_password": { "Ref": "dbPword" }
+			}
+		},
         "Events": {
           "PutResource": {
             "Type": "Api",
             "Properties": {
               "Path": "/",
               "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+
+	  "UsersPost" : {
+      "Type" : "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "abstractplay::abstractplay.Functions::UsersPost",
+        "Runtime": "dotnetcore2.0",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [ "AWSLambdaBasicExecutionRole", "AWSLambdaVPCAccessExecutionRole" ],
+		"VpcConfig": {
+			"SecurityGroupIds": [{ "Ref": "secGroup" }],
+			"SubnetIds": [
+				{ "Ref": "subnet1" },
+				{ "Ref": "subnet2" },
+				{ "Ref": "subnet3" }
+			]
+		},
+		"Environment": {
+			"Variables": {
+				"db_server": { "Ref": "dbHost" },
+				"db_database": { "Ref": "dbDb" },
+				"db_username": { "Ref": "dbUser" },
+				"db_password": { "Ref": "dbPword" }
+			}
+		},
+        "Events": {
+          "PutResource": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/users",
+              "Method": "POST"
             }
           }
         }
