@@ -8,6 +8,12 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 ## Change log
 
+22 May 2018:
+
+* AWS database up and running.
+* The lambdas now talk to the database. Very exciting!
+* Profile creation is pretty much working (in the test environment, at least).
+
 05 May 2018:
 
 * Initial commit of the new code. Nothing here yet.
