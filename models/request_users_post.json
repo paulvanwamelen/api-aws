@@ -1,0 +1,34 @@
+{
+  "$schema" : "http://json-schema.org/draft-04/schema#",
+  "title" : "Required body content when POSTing to /users",
+  "type": "object",
+  "required": [
+    "consent",
+    "displayName"
+  ],
+  "properties": {
+    "displayName": {
+      "type": "string",
+      "description": "Desired display name (which can change over time)"
+    },
+    "country": {
+      "type": "string",
+      "description": "The country the player asserts they're from",
+      "minLength": 2,
+      "maxLength": 2
+    },
+    "tagline": {
+      "type": "string",
+      "description": "The user's tagline. Can be Markdown encoded and a maximum of 255 UTF-8-encoded bytes.",
+      "maxLength": 255
+    },
+    "anonymous": {
+      "type": "boolean",
+      "description": "Does the user wish to remain anonymous?"
+    },
+    "consent": {
+      "type": "boolean",
+      "description": "Does the user consent to terms of service?"
+    }
+  }
+}

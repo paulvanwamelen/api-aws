@@ -70,9 +70,69 @@ namespace abstractplay
             return response;
         }
 
+        public APIGatewayProxyResponse UserGet(APIGatewayProxyRequest request, ILambdaContext context)
+        {
+            APIGatewayProxyResponse response;
+            string ownerIdHex = request.PathParameters["id"];
+            LambdaLogger.Log("Hex ID: " + ownerIdHex);
+
+            //Refetch the object to make sure we're returning canonical data
+            Owner ret;
+            NameEntry activeName;
+            try
+            {
+                byte[] ownerId = GuidGenerator.HelperStringToBA(ownerIdHex);
+                LambdaLogger.Log("ID converted to byte array");
+                ret = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList()[0];
+                LambdaLogger.Log("User record fetched");
+                activeName = ret.Names.ToArray()[0];
+                LambdaLogger.Log("Name record fetched");
+            }
+            catch (Exception e)
+            {
+                ResponseError r = new ResponseError()
+                {
+                    request = "",
+                    message = "Could not find the requested user: " + ownerIdHex
+                };
+                response = new APIGatewayProxyResponse
+                {
+                    StatusCode = (int)HttpStatusCode.NotFound,
+                    Body = JsonConvert.SerializeObject(r),
+                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
+                };
+                return response;
+            }
+
+            //Return the object.
+            ResponseUser ru = new ResponseUser()
+            {
+                id = ownerIdHex,
+                name = activeName.Name,
+                country = ret.Country,
+                member_since = ret.DateCreated.ToString("o"),
+                tagline = ret.Tagline,
+                name_history = ret.Names.ToArray()
+            };
+            response = new APIGatewayProxyResponse
+            {
+                StatusCode = (int)HttpStatusCode.OK,
+                Body = JsonConvert.SerializeObject(ru),
+                Headers = new Dictionary<string, string> {
+                    { "Content-Type", "text/plain; charset=utf-8" },
+                    { "Link", "<" + SCHEMA_USER + ">; rel=\"describedBy\"" }
+                }
+            };
+
+            return response;
+        }
+
         public APIGatewayProxyResponse UsersPost(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            APIGatewayProxyResponse response = new APIGatewayProxyResponse();
+            //LambdaLogger.Log("Request: " + JsonConvert.SerializeObject(request));
+            //LambdaLogger.Log("Context: " + JsonConvert.SerializeObject(context));
+
+            APIGatewayProxyResponse response;
             dynamic body = JsonConvert.DeserializeObject(request.Body);
 
             //displayName is required
@@ -82,6 +142,7 @@ namespace abstractplay
             {
                 name = (string)body.displayName.ToObject(typeof(string));
                 strinfo = new StringInfo(name);
+                //LambdaLogger.Log("Display Name: " + name);
             } catch (Exception e)
             {
                 ResponseError r = new ResponseError()
@@ -121,6 +182,7 @@ namespace abstractplay
             {
                 country = (string)body.country.ToObject(typeof(string));
                 country = country.ToUpper();
+                //LambdaLogger.Log("Country: " + country);
             }
             catch (Exception e)
             {
@@ -155,6 +217,7 @@ namespace abstractplay
             {
                 tagline = (string)body.tagline.ToObject(typeof(string));
                 strinfo = new StringInfo(tagline);
+                //LambdaLogger.Log("Tagline: " + tagline);
             } catch (Exception e)
             {
                 //Do nothing because "tagline" defaults to null.
@@ -191,12 +254,14 @@ namespace abstractplay
                 //Do nothing because "anon" defaults to null.
                 //Ideally we'd check that a property exists, but we can't do that with dynamic variables.
             }
+            //LambdaLogger.Log("Anonymous? " + anon.ToString());
 
             //Consent
             bool consent = false;
             try
             {
                 consent = (bool)body.consent.ToObject(typeof(bool));
+                //LambdaLogger.Log("Consent? " + consent.ToString());
             } catch (Exception e)
             {
                 ResponseError r = new ResponseError()
@@ -212,6 +277,7 @@ namespace abstractplay
                 };
                 return response;
             }
+            //LambdaLogger.Log("Consent? " + consent.ToString());
 
             if (! consent)
             {
@@ -230,22 +296,49 @@ namespace abstractplay
             }
 
             //Check for duplicate cognito ID
-            if (request.RequestContext.Authorizer.Claims["sub"] == null)
+            //LambdaLogger.Log("Checking for duplicate Cognito ID");
+            string sub = null;
+            try
+            {
+                sub = request.RequestContext.Authorizer.Claims["sub"];
+            } catch (Exception e)
             {
                 ResponseError r = new ResponseError()
                 {
                     request = JsonConvert.SerializeObject(body),
-                    message = "You do not appear to be logged in! Nobody should ever see this message!"
+                    message = "You do not appear to be logged in!"
                 };
                 response = new APIGatewayProxyResponse
                 {
                     StatusCode = (int)HttpStatusCode.Unauthorized,
                     Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
+                    Headers = new Dictionary<string, string> {
+                        { "Content-Type", "application/json; charset=utf-8" },
+                        { "WWW-Authenticate", "OAuth realm=\"https://www.abstractplay.com/play\"" }
+                    }
                 };
                 return response;
             }
-            Guid cognitoId = new Guid(request.RequestContext.Authorizer.Claims["sub"]);
+            if (String.IsNullOrEmpty(sub))
+            {
+                ResponseError r = new ResponseError()
+                {
+                    request = JsonConvert.SerializeObject(body),
+                    message = "You do not appear to be logged in!"
+                };
+                response = new APIGatewayProxyResponse
+                {
+                    StatusCode = (int)HttpStatusCode.Unauthorized,
+                    Body = JsonConvert.SerializeObject(r),
+                    Headers = new Dictionary<string, string> {
+                        { "Content-Type", "application/json; charset=utf-8" },
+                        { "WWW-Authenticate", "OAuth realm=\"https://www.abstractplay.com/play\"" }
+                    }
+                };
+                return response;
+            }
+            Guid cognitoId = new Guid(sub);
+            //LambdaLogger.Log("Cognito ID: " + cognitoId.ToString());
             var rets = dbc.Owners.Where(x => x.CognitoId.Equals(cognitoId.ToByteArray())).ToList();
             if (rets.Count > 0)
             {
@@ -264,6 +357,7 @@ namespace abstractplay
             }
 
             //All is well! Create the object.
+            //LambdaLogger.Log("Creating the database entry!");
             Owner owner;
             NameEntry ne;
             byte[] ownerId = GuidGenerator.GenerateSequentialGuid();
@@ -318,7 +412,7 @@ namespace abstractplay
             //Return the object.
             ResponseUser ru = new ResponseUser()
             {
-                id = GuidGenerator.HelperBAToString(ret.PlayerId),
+                id = GuidGenerator.HelperBAToString(ret.OwnerId),
                 name = activeName.Name,
                 country = ret.Country,
                 member_since = ret.DateCreated.ToString("o"),
