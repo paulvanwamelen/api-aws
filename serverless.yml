@@ -42,7 +42,7 @@ provider:
       - ${file(../apsecrets.yml):subnet3}
 
 # you can overwrite defaults here
-  stage: prod
+  stage: dev
   region: us-east-2
 
 # you can add statements to the Lambda function's IAM Role here
@@ -91,7 +91,7 @@ functions:
           method: post
           reqValidatorName: 'xRequestValidateBody'
           authorizer:
-            arn: arn:aws:cognito-idp:us-east-2:153672715141:userpool/us-east-2_mK1gdusQy
+            arn: ${file(../apsecrets.yml):cognitoarn}
           documentation:
             summary: "Create new profile"
             description: "This is how you create a new profile"
