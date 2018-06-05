@@ -27,8 +27,8 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 ## Deploy 
 
 * Make sure you have `dotnet` and `serverless` installed.
-* Configure `serverless` with your own credentials.
-* Install the necessary Serverless plugins.
 * Clone the repo.
+* Run `npm install` to install the plugins.
+* Configure `serverless` with your own credentials.
 * Run `serverless deploy`.
 
