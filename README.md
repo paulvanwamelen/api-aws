@@ -30,5 +30,6 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 * Clone the repo.
 * Run `npm install` to install the plugins.
 * Configure `serverless` with your own credentials.
+* Create the `apsecrets.yml` file with the entries you see in `serverless.yml` or enter your information directly.
 * Run `serverless deploy`.
 

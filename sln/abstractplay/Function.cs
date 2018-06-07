@@ -85,7 +85,7 @@ namespace abstractplay
                 LambdaLogger.Log("ID converted to byte array");
                 ret = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList()[0];
                 LambdaLogger.Log("User record fetched");
-                activeName = ret.Names.ToArray()[0];
+                activeName = ret.Names.ToList()[0];
                 LambdaLogger.Log("Name record fetched");
             }
             catch (Exception e)
@@ -104,6 +104,16 @@ namespace abstractplay
                 return response;
             }
 
+            List<NameHistory> nh = new List<NameHistory>();
+            foreach (var e in ret.Names.ToArray()) 
+            {
+                NameHistory node = new NameHistory
+                {
+                    name = e.Name,
+                    effective_date = e.EffectiveFrom.ToString("o")
+                };
+                nh.Add(node);
+            }
             //Return the object.
             ResponseUser ru = new ResponseUser()
             {
@@ -112,7 +122,7 @@ namespace abstractplay
                 country = ret.Country,
                 member_since = ret.DateCreated.ToString("o"),
                 tagline = ret.Tagline,
-                name_history = ret.Names.ToArray()
+                name_history = nh
             };
             response = new APIGatewayProxyResponse
             {

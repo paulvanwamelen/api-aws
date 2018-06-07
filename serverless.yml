@@ -74,7 +74,7 @@ provider:
 
 functions:
   RootGet:
-    handler: CsharpHandlers::abstractplay.Functions::RootGet
+    handler: abstractplay::abstractplay.Functions::RootGet
     events:
       - http:
           path: /
@@ -84,7 +84,7 @@ functions:
             description: "This is where you'll find basic API information, including announcements, and entry points to the various resources"
 
   UsersPost:
-    handler: CsharpHandlers::abstractplay.Functions::UsersPost
+    handler: abstractplay::abstractplay.Functions::UsersPost
     events:
       - http:
           path: /users
@@ -99,7 +99,7 @@ functions:
               "application/json": "RequestUsersPost"
 
   UserGet:
-    handler: CsharpHandlers::abstractplay.Functions::UserGet
+    handler: abstractplay::abstractplay.Functions::UserGet
     events:
       - http:
           path: /users/{id}
@@ -170,6 +170,8 @@ resources:
 #       Value: "Some output value"
 
 custom:
+  dotnet:
+    slndir: sln/abstractplay
   documentation:
     info:
       version: "1"
