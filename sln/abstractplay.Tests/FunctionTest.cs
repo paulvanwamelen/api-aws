@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
 using Amazon.Lambda.APIGatewayEvents;
 using Newtonsoft.Json;
+using abstractplay.DB;
 
 using abstractplay;
 
@@ -106,15 +108,95 @@ namespace abstractplay.Tests
 
             //Need to delete entries now
             MyContext dbc = new MyContext();
-            Owner ret = dbc.Owners.Where(x => x.CognitoId.Equals(sub.ToByteArray())).ToList()[0];
+            var ownerlist = dbc.Owners.Where(x => x.CognitoId.Equals(sub.ToByteArray())).ToList();
+            Assert.Single(ownerlist);
+            Owners ret = ownerlist[0];
+            Assert.NotNull(ret);
             dbc.Remove(ret);
             dbc.SaveChanges();
 
             request.Body = Minimum_ErrorFree;
             response = functions.UsersPost(request, context);
             Assert.Equal(201, response.StatusCode);
-            ret = dbc.Owners.Where(x => x.CognitoId.Equals(sub.ToByteArray())).ToList()[0];
+            ownerlist = dbc.Owners.Where(x => x.CognitoId.Equals(sub.ToByteArray())).ToList();
+            Assert.Single(ownerlist);
+            ret = ownerlist[0];
+            Assert.NotNull(ret);
             dbc.Remove(ret);
+            dbc.SaveChanges();
+        }
+
+        [Fact]
+        public void TestContextOwner()
+        {
+            MyContext dbc = new MyContext();
+            Guid cognitoId = new Guid("f686ace4-1946-4296-a4ff-6191d7e99004");
+
+            Owners owner;
+            OwnersNames ne;
+            byte[] ownerId = GuidGenerator.GenerateSequentialGuid();
+            Guid playerId = Guid.NewGuid();
+            DateTime now = DateTime.UtcNow;
+
+            owner = new Owners { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = Convert.ToSByte(false), Country = "CA", Tagline = "Lasciate ogni speranza, voi ch'entrate!" };
+            ne = new OwnersNames { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = ownerId, EffectiveFrom = now, Name = "Perlkönig" };
+            owner.OwnersNames.Add(ne);
+            dbc.Add(owner);
+            dbc.SaveChanges();
+
+            Owners ret;
+            OwnersNames activeName;
+            var ownerlist = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList();
+            Assert.Single(ownerlist);
+            ret = ownerlist[0];
+            activeName = ret.OwnersNames.ToList()[0];
+
+            List<NameHistory> nh = new List<NameHistory>();
+            foreach (var e in ret.OwnersNames.ToArray())
+            {
+                NameHistory node = new NameHistory
+                {
+                    name = e.Name,
+                    effective_date = e.EffectiveFrom.ToString("o")
+                };
+                nh.Add(node);
+            }
+            //Return the object.
+            ResponseUser ru = new ResponseUser()
+            {
+                id = GuidGenerator.HelperBAToString(ownerId),
+                name = activeName.Name,
+                country = ret.Country,
+                member_since = ret.DateCreated.ToString("o"),
+                tagline = ret.Tagline,
+                name_history = nh
+            };
+            string generated = JsonConvert.SerializeObject(ru);
+            Debug.WriteLine(generated);
+
+            ResponseUser testru = new ResponseUser()
+            {
+                id = GuidGenerator.HelperBAToString(ownerId),
+                name = "Perlkönig",
+                country = "CA",
+                member_since = now.ToString("o"),
+                tagline = "Lasciate ogni speranza, voi ch'entrate!",
+                name_history = new List<NameHistory>()
+                {
+                    new NameHistory()
+                    {
+                        name = "Perlkönig",
+                        effective_date = now.ToString("o")
+                    }
+                }
+            };
+            string constructed = JsonConvert.SerializeObject(testru);
+            Debug.WriteLine(constructed);
+            Assert.Equal(constructed, generated);
+
+            //Clean up
+            Debug.WriteLine("Trying to clean up");
+            dbc.Remove(owner);
             dbc.SaveChanges();
         }
     }

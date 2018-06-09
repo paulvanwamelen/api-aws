@@ -9,6 +9,7 @@ using Amazon.Lambda.APIGatewayEvents;
 using Newtonsoft.Json;
 using System.Globalization;
 using System.Diagnostics;
+using abstractplay.DB;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -77,15 +78,15 @@ namespace abstractplay
             LambdaLogger.Log("Hex ID: " + ownerIdHex);
 
             //Refetch the object to make sure we're returning canonical data
-            Owner ret;
-            NameEntry activeName;
+            Owners ret;
+            OwnersNames activeName;
             try
             {
                 byte[] ownerId = GuidGenerator.HelperStringToBA(ownerIdHex);
                 LambdaLogger.Log("ID converted to byte array");
                 ret = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList()[0];
                 LambdaLogger.Log("User record fetched");
-                activeName = ret.Names.ToList()[0];
+                activeName = ret.OwnersNames.ToList()[0];
                 LambdaLogger.Log("Name record fetched");
             }
             catch (Exception e)
@@ -105,7 +106,7 @@ namespace abstractplay
             }
 
             List<NameHistory> nh = new List<NameHistory>();
-            foreach (var e in ret.Names.ToArray()) 
+            foreach (var e in ret.OwnersNames.ToArray()) 
             {
                 NameHistory node = new NameHistory
                 {
@@ -368,16 +369,16 @@ namespace abstractplay
 
             //All is well! Create the object.
             //LambdaLogger.Log("Creating the database entry!");
-            Owner owner;
-            NameEntry ne;
+            Owners owner;
+            OwnersNames ne;
             byte[] ownerId = GuidGenerator.GenerateSequentialGuid();
             try
             {
                 Guid playerId = Guid.NewGuid();
                 DateTime now = DateTime.UtcNow;
 
-                ne = new NameEntry { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = ownerId, EffectiveFrom = now, Name = name};
-                owner = new Owner { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = anon, Country = country, Tagline = tagline};
+                owner = new Owners { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = Convert.ToSByte(anon), Country = country, Tagline = tagline };
+                ne = new OwnersNames { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = ownerId, EffectiveFrom = now, Name = name};
                 dbc.Add(owner);
                 dbc.Add(ne);
                 dbc.SaveChanges();
@@ -398,7 +399,7 @@ namespace abstractplay
             }
 
             //Refetch the object to make sure we're returning canonical data
-            Owner ret;
+            Owners ret;
             try
             {
                 ret = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList()[0];
@@ -417,7 +418,7 @@ namespace abstractplay
                 };
                 return response;
             }
-            NameEntry activeName = ret.Names.ToArray()[0];
+            OwnersNames activeName = ret.OwnersNames.ToArray()[0];
 
             //Return the object.
             ResponseUser ru = new ResponseUser()
