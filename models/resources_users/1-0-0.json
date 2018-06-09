@@ -1,0 +1,79 @@
+{
+	"$schema": "http://json-schema.org/hyper-schema#",
+	"id": "https://www.abstractplay.com/schemas/resources_users/1-0-0.json#",
+	"description": "List of users, always returned in userid order",
+	"type": "object",
+	"properties": 
+	{
+		"total":
+		{
+			"description": "Count of total users",
+			"type": "integer"
+		},
+		"data":
+		{
+			"description": "The user data itself",
+			"type": "array",
+			"items": {"$ref": "https://www.abstractplay.com/schemas/resources_user/1-0-0.json#"}
+		},
+		"offset":
+		{
+			"description": "Used for pagination. The zero-based index of where the list starts (zero being the very first record).",
+			"type": "integer",
+			"default": 0
+		},
+		"count":
+		{
+			"description": "The number of records requested. If this number is greater than actual number of records in the 'data' property, then you have exhausted the collection.",
+			"type": "integer"
+		}
+	},
+	"required": ["total", "data", "offset"],
+	"links":
+	[
+		{
+			"title": "Create Account",
+			"description": "This process must not be automated. Third-party clients are not permitted to create/delete accounts. Instead, redirect the user to the given URL and then follow the 'auth' relation from the root resource to authenticate.",
+			"rel": "create",
+			"href": "/forms/newuser",
+			"method": "GET"
+		},
+		{
+			"title": "Get range",
+			"description": "Get a range of records (always in userid order) starting from a zero-based 'offset' (0 being the first record) and returning a requested 'count' of records. If you receive fewer than requested, you have exhausted the collection. Omitting 'count' will give you all the remaining records, starting with the 'offset'.",
+			"rel": "index",
+			"method": "GET",
+			"encType": "application/x-www-form-urlencoded",
+			"schema":
+			{
+				"properties":
+				{
+					"offset": {"type": "integer", "default": 0},
+					"count": {"type": "integer"}
+				}
+			}
+		},
+		{
+			"title": "Find username",
+			"description": "Search for player records who have ever gone by the given name. The first record returned will always be the player *currently* using that name. If an exact match is not found, records for players whose names contain or are particularly close to the provided string will be returned. Searches are case insensitive and are run against normalized usernames (so accented characters are not a problem).",
+			"rel": "search",
+			"method": "GET",
+			"encType": "application/x-www-form-urlencoded",
+			"schema":
+			{
+				"properties":
+				{
+					"name": {"type": "string"},
+				}
+			}
+		},
+		{
+			"title": "Get user",
+			"description": "Get a specific user record",
+			"rel": "instance",
+			"href": "/users/{id}",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_user/1-0-0.json#"}
+		}
+	]
+}

@@ -1,0 +1,16 @@
+{
+	"$schema": "http://json-schema.org/schema#",
+	"id": "https://www.abstractplay.com/schemas/games_ping_response/1-0-0.json#",
+	"description": "Schema describing expected response of a game script to a 'ping' request.",
+	"type": "object",
+	"properties": 
+	{
+		"state":
+		{
+			"description": "An opaque value provided by the game and saved by the server. If the server notices that the state value has changed, then it will follow up with a 'metadata' request to get the updated game information.",
+			"type": "string",
+			"maxLength": 255
+		}
+	},
+	"required": ["state"]
+}

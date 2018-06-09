@@ -1,0 +1,110 @@
+{
+	"$schema": "http://json-schema.org/hyper-schema#",
+	"id": "https://www.abstractplay.com/schemas/resources_user/1-0-0.json#",
+	"description": "A specific user",
+	"type": "object",
+	"properties": 
+	{
+		"id":
+		{
+			"description": "The user's unique user id, which never changes",
+			"type": "string"
+		},
+		"name":
+		{
+			"description": "The user's current username (which can change over time)",
+			"type": "string"
+		},
+		"country":
+		{
+			"description": "The country the player asserts they're from",
+			"type": "string"
+		},
+		"member_since":
+		{
+			"description": "The date the account was created",
+			"type": "string",
+			"format": "date-time"
+		},
+		"tagline":
+		{
+			"description": "The user's tagline. Can be Markdown encoded and a maximum of 255 UTF-8-encoded bytes.",
+			"type": "string",
+			"maxLength": 255
+		},
+		"name_history":
+		{
+			"description": "The history of this player's aliases",
+			"type": "array",
+			"items":
+			{
+				"type": "object",
+				"properties":
+				{
+					"name":
+					{
+						"type": "string"
+					},
+					"effective_date":
+					{
+						"type": "string",
+						"format": "date-time"
+					}
+				},
+				"required": ["name", "effective_date"]
+			}
+		}
+	},
+	"required": ["id", "name", "member_since", "name_history"],
+	"links":
+	[
+		{
+			"title": "Messages To",
+			"description": "(Authentication required) Collection of private messages you have sent to that player (based on what you've saved in *your* mailbox, not what's in the receiver's box).",
+			"rel": "messages",
+			"href": "/users/{id}/messages",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_messages/1-0-0.json#"}
+		},
+		{
+			"title": "Current Games",
+			"description": "Collection of all the games this player is currently participating in",
+			"rel": "games_current",
+			"href": "/users/{id}/games/current",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_current/1-0-0.json#"}
+		},
+		{
+			"title": "Past Games",
+			"description": "Collection of archived games this player has participated in",
+			"rel": "games_archive",
+			"href": "/users/{id}/games/archive",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_archive/1-0-0.json#"}
+		},
+		{
+			"title": "Statistics",
+			"description": "The leaderboard stats for this player",
+			"rel": "stats",
+			"href": "/users/{id}/stats",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_user_stats/1-0-0.json#"}
+		},
+		{
+			"title": "Clients",
+			"description": "Any clients owned by this player",
+			"rel": "clients",
+			"href": "/users/{id}/dev/clients",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_clients/1-0-0.json#"}
+		},
+		{
+			"title": "AIs",
+			"description": "Any AIs owned by this player",
+			"rel": "ais",
+			"href": "/users/{id}/dev/ais",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_ais/1-0-0.json#"}
+		}
+	]
+}

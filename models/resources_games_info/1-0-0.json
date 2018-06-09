@@ -1,0 +1,75 @@
+{
+	"$schema": "http://json-schema.org/hyper-schema#",
+	"id": "https://www.abstractplay.com/schemas/resources_games_info/1-0-0.json#",
+	"description": "Information about the game itself",
+	"type": "object",
+	"properties": 
+	{
+		"id":
+		{
+			"description": "The game's unique short ID",
+			"type": "string"
+		},
+		"name":
+		{
+			"description": "The game's formal name",
+			"type": "string"
+		},
+		"live_date":
+		{
+			"description": "The date the game first went live",
+			"type": "string",
+			"format": "date-time"
+		},
+		"description":
+		{
+			"description": "A long-form, Markdown-encoded description of the game",
+			"type": "string"
+		},
+		"url":
+		{
+			"description": "The HTTP endpoint for the actual game server. If this is null or missing, then the game is internal to Abstract Play.",
+			"type": "string",
+			"format": "uri"
+		},
+		"is_live":
+		{
+			"description": "An indication of whether the game is visible to the public",
+			"type": "boolean"
+		},
+		"publisher":
+		{
+			"description": "Information on the publisher of the game",
+			"$ref": "https://www.abstractplay.com/schemas/resources_publisher/1-0-0.json#"
+		},
+		"player_counts":
+		{
+			"description": "A list of supported player counts",
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "integer",
+				"minimum": 1
+			}
+		},
+		"version":
+		{
+			"description": "Current version number. Other versions may be be supported by the game code, but this is the one currently being used for new games.",
+			"type": "integer"
+		},
+		"changelog":
+		{
+			"description": "A long-form, Markdown-encoded description of how the game code has changed over time.",
+			"type": "string"
+		},
+		"rating":
+		{
+			"description": "The game's ELO rating as determined by players rating pairs of games against each other. Used to rank games.",
+			"type": "integer"
+		}
+	},
+	"required": ["id", "name", "description", "player_counts", "version"],
+	"links":
+	[
+	]
+}

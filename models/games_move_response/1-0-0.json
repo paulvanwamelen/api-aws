@@ -1,0 +1,38 @@
+{
+	"$schema": "http://json-schema.org/schema#",
+	"id": "https://www.abstractplay.com/schemas/games_move_response/1-0-0.json#",
+	"description": "Schema describing expected response of a game script to a 'move' request.",
+	"type": "object",
+	"properties": 
+	{
+		"state":
+		{
+			"description": "The updated game state. This can be in any format you wish, as long as it is encoded as UTF-8 text. JSON is preferred as it tends to be the most compact, but go with whatever you want. If we run into storage issues, we'll let you know. Current maximum is right around 16 megabytes!",
+			"type": "string",
+			"maxLength": 16777215
+		},
+		"whoseturn":
+		{
+			"description": "An array of userids (usually just one, but not always) telling the system who can submit moves for this next turn. The server will enforce this (i.e., reject submitted moves from users not in this list) without contacting the game script. If empty, the server will assume the game has ended and will follow up with an 'archive' request.",
+			"type": "array",
+			"minItems": 0,
+			"uniqueItems": true,
+			"items": { "type": "integer" }
+		},
+		"chat":
+		{
+			"description": "An optional Markdown-encoded chat message up to 65,535 UTF-8-encoded bytes in length that will be posted to the game. Usually used to describe the move that just occurred or to announce who won.",
+			"type": "string",
+			"maxLength": 65535
+		},
+		"renderrep":
+		{
+			"description": "The render representation of this game state. This is what's given to AIs and used for presenting the game state to the player. Games that handle their own rendering should omit this property. As new render reps are created (potentially game specific), they will be added here.",
+			"oneOf":
+			[
+				{"$ref": "https://www.abstractplay.com/static/schemas/games_render_response/1-0-0.json#"}
+			]
+		}
+	},
+	"required": ["state", "whoseturn"]
+}

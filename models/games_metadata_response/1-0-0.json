@@ -1,0 +1,82 @@
+{
+	"$schema": "http://json-schema.org/schema#",
+	"id": "https://www.abstractplay.com/schemas/games_metadata_response/1-0-0.json#",
+	"description": "Schema describing expected response of a game script to a 'metadata' request. This is usually triggered by a state change during a 'ping' request.",
+	"type": "object",
+	"properties": 
+	{
+		"state":
+		{
+			"description": "An opaque value provided by the game and saved by the server. This is how the script can signal to the server that the code has changed.",
+			"type": "string",
+			"maxLength": 255
+		},
+		"version":
+		{
+			"description": "A simple integer that should only be changed if you are breaking backwards compatibility (meaning that the representation of the game state in version X is different from that in version Y). The version number is attached to each new game created so that your code knows how to handle it. Your code should be able to handle older versions as long as possible! When playing asynchronously, games can take months to complete. Please do not ruin games in progress. Consistent problems with backwards compatibility could result in the game being removed from the system.",
+			"type": "integer",
+			"minimum": 1
+		},
+		"playercounts":
+		{
+			"description": "A comma-separated list of valid player counts",
+			"type": "array",
+			"minItems" : 1,
+			"uniqueItems": true,
+			"items": 
+			{
+				"type": "integer"
+			}
+		},
+		"variants":
+		{
+			"description": "The variants supported. Should not include the system-wide variants (e.g., 'unrated', 'hard time', etc.).",
+			"type": "array",
+			"uniqueItems": true,
+			"items": 
+			{
+				"type": "object",
+				"properties":
+				{
+					"name": 
+					{ 
+						"description": "The basic name of the variant. Be concise, but also as self-explanatory as possible.",
+						"type": "string", 
+						"maxLength": 255 
+					},
+					"note": 
+					{
+						"description": "An optional, lengthier (still only 255 bytes), Markdown-encoded description of the variant.",
+						"type": "string", 
+						"maxLength": 255 
+					},
+					"group": 
+					{
+						"description": "A simple string that identifies groups of mutually exclusive variants. You typically see this in games with various board sizes or configurations where you can only pick one. Variants that share identical 'group' designations will be presented to the player as radio buttons instead of check boxes.",
+						"type": "string", 
+						"maxLength": 255
+					}
+				},
+				"required": ["name"]
+			}
+		},
+		"description":
+		{
+			"description": "A Markdown-encoded block of text that describes the game and can include rules with images. The first paragraph or two should be a short and succinct summary, though. Then should come a blog-like 'continuation marker' (a blank line followed by two dashes followed by another blank line ['\n\n--\n\n']), after which can come how ever much text you want (up to 65,535 UTF-8-encoded bytes).",
+			"type": "string",
+			"maxLength": 65535
+		},
+		"changelog":
+		{
+			"description": "A Markdown-encoded block of text that describes how the game code has changed over time.",
+			"type": "string",
+			"maxLength": 65535
+		}
+	},
+	"required": [
+		"state",
+		"version",
+		"playercounts",
+		"description"
+	]
+}

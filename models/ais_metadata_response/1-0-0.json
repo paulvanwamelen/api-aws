@@ -1,0 +1,25 @@
+{
+	"$schema": "http://json-schema.org/schema#",
+	"id": "https://www.abstractplay.com/schemas/ais_metadata_response/1-0-0.json#",
+	"description": "Schema describing expected response of an AI script to a 'metadata' request. This is usually triggered by a state change during a 'ping' request.",
+	"type": "object",
+	"properties": 
+	{
+		"state":
+		{
+			"description": "An opaque value provided by the AI and saved by the server. This is how the script can signal to the server that the code has changed.",
+			"type": "string",
+			"maxLength": 255
+		},
+		"description":
+		{
+			"description": "A Markdown-encoded block of text that describes the AI, what it can do, etc. This should also include any applicable changelog (up to 65,535 UTF-8-encoded bytes).",
+			"type": "string",
+			"maxLength": 65535
+		}
+	},
+	"required": [
+		"state",
+		"description"
+	]
+}

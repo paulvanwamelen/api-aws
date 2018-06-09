@@ -1,0 +1,65 @@
+{
+	"$schema": "http://json-schema.org/hyper-schema#",
+	"id": "https://www.abstractplay.com/schemas/resources_games/1-0-0.json#",
+	"description": "The root games resource",
+	"type": "object",
+	"properties": 
+	{
+		"num_available":
+		{
+			"description": "The number of games currently available",
+			"type": "integer"
+		},
+		"num_pending":
+		{
+			"description": "The number of pending challenges",
+			"type": "integer"
+		},
+		"num_active":
+		{
+			"description": "The number of active games",
+			"type": "integer"
+		},
+		"num_archived":
+		{
+			"description": "The number of archived games",
+			"type": "integer"
+		}
+	},
+	"required": ["id", "name", "member_since", "name_history"],
+	"links":
+	[
+		{
+			"title": "Available Games",
+			"description": "List of implemented games",
+			"rel": "games_available",
+			"href": "/games/info",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_available/1-0-0.json#"}
+		},
+		{
+			"title": "Games In Progress",
+			"description": "List of games in progress",
+			"rel": "games_inprogress",
+			"href": "/games/active",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_data/1-0-0.json#"}
+		},
+		{
+			"title": "Games Archive",
+			"description": "List of completed games",
+			"rel": "games_archive",
+			"href": "/games/archive",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_archive/1-0-0.json#"}
+		},
+		{
+			"title": "Pending Games (Challenges)",
+			"description": "List of pending challenges",
+			"rel": "games_pending",
+			"href": "/games/pending",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_pending/1-0-0.json#"}
+		}
+	]
+}

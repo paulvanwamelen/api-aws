@@ -1,0 +1,185 @@
+{
+	"$schema": "http://json-schema.org/hyper-schema#",
+	"id": "https://www.abstractplay.com/schemas/resources_root/1-0-0.json#",
+	"description": "Schema describing the root resource.",
+	"type": "object",
+	"properties": 
+	{
+		"desc":
+		{
+			"description": "A Markdown-encoded string describing the AbstractPlay service.",
+			"type": "string"
+		},
+		"announcements":
+		{
+			"description": "An array of objects representing chronological announcements, from most recent to oldest.",
+			"type": "array",
+			"items":
+			{
+				"description": "An object representing an announcement.",
+				"type": "object",
+				"minItems": 1,
+				"properties":
+				{
+					"date":
+					{
+						"type": "string",
+						"format": "date-time"
+					},
+					"title":
+					{
+						"type": "string"
+					},
+					"message":
+					{
+						"description": "Markdown-encoded announcement.",
+						"type": "string"
+					}
+				},
+				"required": ["title", "date_posted", "msg"]
+			}
+		}
+	},
+	"required": ["desc"],
+	"links":
+	[
+		{
+			"title": "Authenticate",
+			"description": "Initiate OAuth 2.0 login flow",
+			"rel": "auth",
+			"href": "/auth/oauth",
+			"method": "GET",
+			"encType": "application/x-www-form-urlencoded",
+			"schema":
+			{
+				"properties":
+				{
+					"client_id": 
+					{
+						"description": "The client ID you were given when you registered your client.",
+						"type": "string"
+					},
+					"response_type": {"enum": ["code", "token"]},
+					"redirect_uri": 
+					{
+						"description": "One of the redirect URIs you registered when you set up your client.",
+						"type": "string", 
+						"format": "uri"
+					},
+					"scope":
+					{
+						"description": "Space-separated list of valid scopes you wish the user to grant.",
+						"type": "string"
+					},
+					"state": {"type": "string"}
+
+				},
+				"required": ["client_id", "response_type", "redirect_uri", "scope"]
+			}
+		},
+		{
+			"title": "Users",
+			"description": "List of users",
+			"rel": "users",
+			"href": "/users",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_users/1-0-0.json#"}
+		},
+		{
+			"title": "Available Games",
+			"description": "List of implemented games",
+			"rel": "games_available",
+			"href": "/games/info",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_available/1-0-0.json#"}
+		},
+		{
+			"title": "Games In Progress",
+			"description": "List of games in progress",
+			"rel": "games_inprogress",
+			"href": "/games/active",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_data/1-0-0.json#"}
+		},
+		{
+			"title": "Games Archive",
+			"description": "List of completed games",
+			"rel": "games_archive",
+			"href": "/games/archive",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_archive/1-0-0.json#"}
+		},
+		{
+			"title": "Pending Games (Challenges)",
+			"description": "List of pending challenges",
+			"rel": "games_pending",
+			"href": "/games/pending",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_pending/1-0-0.json#"}
+		},
+		{
+			"title": "Clients",
+			"description": "List of third-party clients",
+			"rel": "clients",
+			"href": "/dev/clients",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_clients/1-0-0.json#"}
+		},
+		{
+			"title": "AIs",
+			"description": "List of AI opponents",
+			"rel": "ais",
+			"href": "/dev/ais",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_ais/1-0-0.json#"}
+		},
+		{
+			"title": "My Turn",
+			"description": "(Authentication required) List of games in which it is 'my turn.'",
+			"rel": "myturn",
+			"href": "/users/me/games/myturn",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_data/1-0-0.json#"}
+		},
+		{
+			"title": "My Games",
+			"description": "(Authentication required) List of games in which 'you' are participating.",
+			"rel": "mygames",
+			"href": "/users/me/games",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_data/1-0-0.json#"}
+		},
+		{
+			"title": "Games I'm Following",
+			"description": "(Authentication required) List of games that 'you' are following.",
+			"rel": "following",
+			"href": "/users/me/games/following",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_games_data/1-0-0.json#"}
+		},
+		{
+			"title": "My Messages",
+			"description": "(Authentication required) List of 'your' private messages.",
+			"rel": "messages",
+			"href": "/users/me/messages",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_users_messages/1-0-0.json#"}
+		},
+		{
+			"title": "My Clients",
+			"description": "(Authentication required) List of clients 'you' own.",
+			"rel": "myclients",
+			"href": "/users/me/dev/clients",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_clients/1-0-0.json#"}
+		},
+		{
+			"title": "My AIs",
+			"description": "(Authentication required) List of 'your' AIs.",
+			"rel": "myais",
+			"href": "/users/me/dev/ais",
+			"method": "GET",
+			"targetSchema": {"$ref": "https://www.abstractplay.com/schemas/resources_ais/1-0-0.json#"}
+		}		
+	]
+}
