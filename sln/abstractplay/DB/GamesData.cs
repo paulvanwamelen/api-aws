@@ -15,8 +15,8 @@ namespace abstractplay.DB
 
         public byte[] EntryId { get; set; }
         public byte[] GameId { get; set; }
-        public sbyte Closed { get; set; }
-        public sbyte Alert { get; set; }
+        public bool Closed { get; set; }
+        public bool Alert { get; set; }
         public string Variants { get; set; }
 
         public ICollection<GamesDataChats> GamesDataChats { get; set; }

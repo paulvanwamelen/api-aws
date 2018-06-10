@@ -8,11 +8,15 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 ## Change log
 
+10 Jun 2018:
+
+* Figured out my database issues. Profiles can now be correctly fetched.  
+
 03 Jun 2018:
 
-  * Moved to [Serverless framework](https://serverless.com) to manage deployment. The system within Visual Studio wouldn't let me configure API gateway in the way I needed to.
-  * Profile creation is working as expected.
-  * Profile fetching is currently broken for reasons I haven't had time to ascertain yet.
+* Moved to [Serverless framework](https://serverless.com) to manage deployment. The system within Visual Studio wouldn't let me configure API gateway in the way I needed to.
+* Profile creation is working as expected.
+* Profile fetching is currently broken for reasons I haven't had time to ascertain yet.
 
 22 May 2018:
 
@@ -24,7 +28,7 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 * Initial commit of the new code. Nothing here yet.
 
-## Deploy 
+## Deploy
 
 * Make sure you have `dotnet` and `serverless` installed.
 * Clone the repo.
@@ -32,4 +36,3 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 * Configure `serverless` with your own credentials.
 * Create the `apsecrets.yml` file with the entries you see in `serverless.yml` or enter your information directly.
 * Run `serverless deploy`.
-

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
@@ -50,9 +52,8 @@ namespace abstractplay
         public Functions()
         {
             dbc = new MyContext();
-            dbc.Database.EnsureCreated();
+            //dbc.Database.EnsureCreated();
         }
-
 
         /// <summary>
         /// A Lambda function to respond to HTTP Get methods from API Gateway
@@ -83,11 +84,10 @@ namespace abstractplay
             try
             {
                 byte[] ownerId = GuidGenerator.HelperStringToBA(ownerIdHex);
-                LambdaLogger.Log("ID converted to byte array");
-                ret = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList()[0];
-                LambdaLogger.Log("User record fetched");
-                activeName = ret.OwnersNames.ToList()[0];
-                LambdaLogger.Log("Name record fetched");
+                ret = dbc.Owners
+                    .Include(x => x.OwnersNames)
+                    .Single(x => x.OwnerId.Equals(ownerId) && !x.Anonymous);
+                activeName = ret.OwnersNames.First();
             }
             catch (Exception e)
             {
@@ -350,13 +350,12 @@ namespace abstractplay
             }
             Guid cognitoId = new Guid(sub);
             //LambdaLogger.Log("Cognito ID: " + cognitoId.ToString());
-            var rets = dbc.Owners.Where(x => x.CognitoId.Equals(cognitoId.ToByteArray())).ToList();
-            if (rets.Count > 0)
+            if (dbc.Owners.Any(x => x.CognitoId.Equals(cognitoId.ToByteArray())))
             {
                 ResponseError r = new ResponseError()
                 {
                     request = JsonConvert.SerializeObject(body),
-                    message = "You already have an account (ID "+ GuidGenerator.HelperBAToString(rets[0].OwnerId) +"). Having multiple accounts if forbidden."
+                    message = "You already have an account. Having multiple accounts if forbidden."
                 };
                 response = new APIGatewayProxyResponse
                 {
@@ -377,10 +376,10 @@ namespace abstractplay
                 Guid playerId = Guid.NewGuid();
                 DateTime now = DateTime.UtcNow;
 
-                owner = new Owners { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = Convert.ToSByte(anon), Country = country, Tagline = tagline };
+                owner = new Owners { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = anon, Country = country, Tagline = tagline };
                 ne = new OwnersNames { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = ownerId, EffectiveFrom = now, Name = name};
+                owner.OwnersNames.Add(ne);
                 dbc.Add(owner);
-                dbc.Add(ne);
                 dbc.SaveChanges();
             } catch (Exception e)
             {
@@ -402,7 +401,7 @@ namespace abstractplay
             Owners ret;
             try
             {
-                ret = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList()[0];
+                ret = dbc.Owners.Include(x => x.OwnersNames).Single(x => x.OwnerId.Equals(ownerId));
             } catch (Exception e)
             {
                 ResponseError r = new ResponseError()
@@ -418,7 +417,7 @@ namespace abstractplay
                 };
                 return response;
             }
-            OwnersNames activeName = ret.OwnersNames.ToArray()[0];
+            OwnersNames activeName = ret.OwnersNames.First();
 
             //Return the object.
             ResponseUser ru = new ResponseUser()

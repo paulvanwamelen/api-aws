@@ -18,7 +18,7 @@ namespace abstractplay.DB
         public DateTime LiveDate { get; set; }
         public string Description { get; set; }
         public string Url { get; set; }
-        public sbyte IsLive { get; set; }
+        public bool IsLive { get; set; }
         public byte[] PublisherId { get; set; }
         public string PlayerCounts { get; set; }
         public byte Version { get; set; }

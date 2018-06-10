@@ -1,0 +1,56 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "id": "https://www.abstractplay.com/schemas/resources_user.json#",
+    "description": "A specific user",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "The user's unique user id, which never changes",
+            "type": "string"
+        },
+        "name": {
+            "description": "The user's current username (which can change over time)",
+            "type": "string"
+        },
+        "country": {
+            "description": "The country the player asserts they're from",
+            "type": "string"
+        },
+        "member_since": {
+            "description": "The date the account was created",
+            "type": "string",
+            "format": "date-time"
+        },
+        "tagline": {
+            "description": "The user's tagline. Can be Markdown encoded and a maximum of 255 UTF-8-encoded bytes.",
+            "type": "string",
+            "maxLength": 255
+        },
+        "name_history": {
+            "description": "The history of this player's aliases",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "effective_date": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "name",
+                    "effective_date"
+                ]
+            }
+        }
+    },
+    "required": [
+        "id",
+        "name",
+        "member_since",
+        "name_history"
+    ]
+}

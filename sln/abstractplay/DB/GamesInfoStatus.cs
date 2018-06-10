@@ -7,8 +7,8 @@ namespace abstractplay.DB
     {
         public byte[] StatusId { get; set; }
         public byte[] GameId { get; set; }
-        public DateTimeOffset Timestamp { get; set; }
-        public sbyte IsUp { get; set; }
+        public DateTime Timestamp { get; set; }
+        public bool IsUp { get; set; }
         public string Message { get; set; }
 
         public GamesInfo Game { get; set; }

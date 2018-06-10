@@ -10,5 +10,6 @@ namespace abstractplay.DB
         public int Current { get; set; }
         public int Increment { get; set; }
         public int Maximum { get; set; }
+        public bool Frozen { get; set; }
     }
 }

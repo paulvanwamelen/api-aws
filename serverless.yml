@@ -17,6 +17,7 @@ plugins:
   - serverless-dotnet
   - serverless-aws-documentation
   - serverless-reqvalidator-plugin
+  #- serverless-domain-manager
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -111,6 +112,11 @@ functions:
           documentation:
             summary: "Get user profile"
             description: "Get specific user profile and related resources"
+            methodResponses:
+              -
+                statusCode: "200"
+                responseModels:
+                  "application/json": "ResourceUser"
 
 
 #    The following are a few example events you can configure
@@ -172,17 +178,28 @@ resources:
 custom:
   dotnet:
     slndir: sln/abstractplay
+  customDomain:
+    domainName: api.abstractplay.com
+    basepath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: false
+    endpointType: "edge"
   documentation:
     info:
       version: "1"
       title: "Abstract Play API"
       description: "The primary Abstract Play API"
-      termsOfService: "https://www.abstractplay.com/terms.html"
+      termsOfService: "https://www.abstractplay.com/terms"
     models:
       -
         name: "RequestUsersPost"
         description: "Required body content when POSTing to /users"
         contentType: "application/json"
         schema: ${file(models/request_users_post.json)}
+      -
+        name: "ResourceUser"
+        description: "Format of a single user record"
+        contentType: "application/json"
+        schema: ${file(models/resource_user.json)}
 
 

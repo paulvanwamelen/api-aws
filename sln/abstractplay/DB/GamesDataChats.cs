@@ -8,7 +8,7 @@ namespace abstractplay.DB
         public byte[] ChatId { get; set; }
         public byte[] GameId { get; set; }
         public byte[] PlayerId { get; set; }
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
         public string Message { get; set; }
 
         public GamesData Game { get; set; }

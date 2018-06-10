@@ -3,8 +3,10 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 using Xunit;
+using Xunit.Abstractions;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
 using Amazon.Lambda.APIGatewayEvents;
@@ -17,8 +19,11 @@ namespace abstractplay.Tests
 {
     public class FunctionTest
     {
-        public FunctionTest()
+        private readonly ITestOutputHelper output;
+
+        public FunctionTest(ITestOutputHelper output)
         {
+            this.output = output;
         }
 
         [Fact]
@@ -106,98 +111,98 @@ namespace abstractplay.Tests
             response = functions.UsersPost(request, context);
             Assert.Equal(400, response.StatusCode);
 
-            //Need to delete entries now
-            MyContext dbc = new MyContext();
-            var ownerlist = dbc.Owners.Where(x => x.CognitoId.Equals(sub.ToByteArray())).ToList();
-            Assert.Single(ownerlist);
-            Owners ret = ownerlist[0];
-            Assert.NotNull(ret);
-            dbc.Remove(ret);
-            dbc.SaveChanges();
+            //Minimal example then clean up
+            using (MyContext dbc = new MyContext()) {
+                Owners ret = dbc.Owners.Single(x => x.CognitoId.Equals(sub.ToByteArray()));
+                dbc.Remove(ret);
+                dbc.SaveChanges();
 
-            request.Body = Minimum_ErrorFree;
-            response = functions.UsersPost(request, context);
-            Assert.Equal(201, response.StatusCode);
-            ownerlist = dbc.Owners.Where(x => x.CognitoId.Equals(sub.ToByteArray())).ToList();
-            Assert.Single(ownerlist);
-            ret = ownerlist[0];
-            Assert.NotNull(ret);
-            dbc.Remove(ret);
-            dbc.SaveChanges();
+                request.Body = Minimum_ErrorFree;
+                response = functions.UsersPost(request, context);
+                Assert.Equal(201, response.StatusCode);
+                ret = dbc.Owners.Single(x => x.CognitoId.Equals(sub.ToByteArray()));
+                dbc.Remove(ret);
+                dbc.SaveChanges();
+            }
         }
 
         [Fact]
         public void TestContextOwner()
         {
-            MyContext dbc = new MyContext();
-            Guid cognitoId = new Guid("f686ace4-1946-4296-a4ff-6191d7e99004");
-
-            Owners owner;
-            OwnersNames ne;
             byte[] ownerId = GuidGenerator.GenerateSequentialGuid();
             Guid playerId = Guid.NewGuid();
             DateTime now = DateTime.UtcNow;
+            now = new DateTime(now.Ticks - (now.Ticks % TimeSpan.TicksPerSecond), DateTimeKind.Utc);
+            Guid cognitoId = new Guid("f686ace4-1946-4296-a4ff-6191d7e99004");
 
-            owner = new Owners { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = Convert.ToSByte(false), Country = "CA", Tagline = "Lasciate ogni speranza, voi ch'entrate!" };
-            ne = new OwnersNames { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = ownerId, EffectiveFrom = now, Name = "Perlkönig" };
-            owner.OwnersNames.Add(ne);
-            dbc.Add(owner);
-            dbc.SaveChanges();
+            using (MyContext dbc = new MyContext()) {
 
-            Owners ret;
-            OwnersNames activeName;
-            var ownerlist = dbc.Owners.Where(x => x.OwnerId.Equals(ownerId)).ToList();
-            Assert.Single(ownerlist);
-            ret = ownerlist[0];
-            activeName = ret.OwnersNames.ToList()[0];
+                Owners owner;
+                OwnersNames ne;
 
-            List<NameHistory> nh = new List<NameHistory>();
-            foreach (var e in ret.OwnersNames.ToArray())
-            {
-                NameHistory node = new NameHistory
-                {
-                    name = e.Name,
-                    effective_date = e.EffectiveFrom.ToString("o")
-                };
-                nh.Add(node);
+                owner = new Owners { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = false, Country = "CA", Tagline = "Lasciate ogni speranza, voi ch'entrate!" };
+                ne = new OwnersNames { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = ownerId, EffectiveFrom = now, Name = "Perlkönig" };
+                owner.OwnersNames.Add(ne);
+                dbc.Add(owner);
+                dbc.SaveChanges();
             }
-            //Return the object.
-            ResponseUser ru = new ResponseUser()
-            {
-                id = GuidGenerator.HelperBAToString(ownerId),
-                name = activeName.Name,
-                country = ret.Country,
-                member_since = ret.DateCreated.ToString("o"),
-                tagline = ret.Tagline,
-                name_history = nh
-            };
-            string generated = JsonConvert.SerializeObject(ru);
-            Debug.WriteLine(generated);
 
-            ResponseUser testru = new ResponseUser()
-            {
-                id = GuidGenerator.HelperBAToString(ownerId),
-                name = "Perlkönig",
-                country = "CA",
-                member_since = now.ToString("o"),
-                tagline = "Lasciate ogni speranza, voi ch'entrate!",
-                name_history = new List<NameHistory>()
+            using (MyContext dbc = new MyContext()) {
+                Owners ret;
+                OwnersNames activeName;
+                ret = dbc.Owners
+                    .Include(x => x.OwnersNames)
+                    .Single(x => x.OwnerId.Equals(ownerId));
+                activeName = ret.OwnersNames.First();
+                //output.WriteLine(JsonConvert.SerializeObject(ret, Formatting.Indented, new JsonSerializerSettings {ReferenceLoopHandling = ReferenceLoopHandling.Ignore}));
+
+                List<NameHistory> nh = new List<NameHistory>();
+                foreach (var e in ret.OwnersNames.ToArray())
                 {
-                    new NameHistory()
+                    NameHistory node = new NameHistory
                     {
-                        name = "Perlkönig",
-                        effective_date = now.ToString("o")
-                    }
+                        name = e.Name,
+                        effective_date = e.EffectiveFrom.ToString("o")
+                    };
+                    nh.Add(node);
                 }
-            };
-            string constructed = JsonConvert.SerializeObject(testru);
-            Debug.WriteLine(constructed);
-            Assert.Equal(constructed, generated);
+                //Return the object.
+                ResponseUser ru = new ResponseUser()
+                {
+                    id = GuidGenerator.HelperBAToString(ownerId),
+                    name = activeName.Name,
+                    country = ret.Country,
+                    member_since = ret.DateCreated.ToString("o"),
+                    tagline = ret.Tagline,
+                    name_history = nh
+                };
+                string generated = JsonConvert.SerializeObject(ru);
+                output.WriteLine(generated);
 
-            //Clean up
-            Debug.WriteLine("Trying to clean up");
-            dbc.Remove(owner);
-            dbc.SaveChanges();
+                ResponseUser testru = new ResponseUser()
+                {
+                    id = GuidGenerator.HelperBAToString(ownerId),
+                    name = "Perlkönig",
+                    country = "CA",
+                    member_since = now.ToString("o"),
+                    tagline = "Lasciate ogni speranza, voi ch'entrate!",
+                    name_history = new List<NameHistory>()
+                    {
+                        new NameHistory()
+                        {
+                            name = "Perlkönig",
+                            effective_date = now.ToString("o")
+                        }
+                    }
+                };
+                string constructed = JsonConvert.SerializeObject(testru);
+                output.WriteLine(constructed);
+                Assert.Equal(constructed, generated);
+
+                //Clean up
+                dbc.Remove(ret);
+                dbc.SaveChanges();
+            }
         }
     }
 }

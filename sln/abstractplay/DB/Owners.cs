@@ -20,7 +20,7 @@ namespace abstractplay.DB
         public DateTime DateCreated { get; set; }
         public DateTime ConsentDate { get; set; }
         public string Country { get; set; }
-        public sbyte Anonymous { get; set; }
+        public bool Anonymous { get; set; }
         public string Tagline { get; set; }
 
         public ICollection<GamesDataChats> GamesDataChats { get; set; }
