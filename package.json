@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "description": "Abstract Play API serverless stack",
   "main": "serverless.yml",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "serverless-aws-documentation": "^1.1.0",
-    "serverless-reqvalidator-plugin": "^1.0.2",
-    "serverless-domain-manager": "^2.4.0"
+    "serverless-domain-manager": "^2.4.0",
+    "serverless-plugin-warmup": "^3.6.1-rc.1",
+    "serverless-reqvalidator-plugin": "^1.0.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

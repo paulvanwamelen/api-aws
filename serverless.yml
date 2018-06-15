@@ -17,7 +17,8 @@ plugins:
   - serverless-dotnet
   - serverless-aws-documentation
   - serverless-reqvalidator-plugin
-  #- serverless-domain-manager
+  - serverless-domain-manager
+  - serverless-plugin-warmup
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
