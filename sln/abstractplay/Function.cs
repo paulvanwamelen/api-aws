@@ -4,7 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-
+//using System.Net.Http;
+//using System.Net.Http.Headers;
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
@@ -43,15 +44,15 @@ namespace abstractplay
     public class Functions
     {
         private readonly string SCHEMA_USER = "https://www.abstractplay.com/schemas/resources_user/1-0-0.json";
-
-        private static MyContext dbc;
+        //private static readonly HttpClient client = new HttpClient();
+        private static MyContext dbc = new MyContext();
 
         /// <summary>
         /// Default constructor that Lambda will invoke.
         /// </summary>
         public Functions()
         {
-            dbc = new MyContext();
+            //dbc = new MyContext();
             //dbc.Database.EnsureCreated();
         }
 
@@ -61,6 +62,23 @@ namespace abstractplay
         /// <param name="request"></param>
         /// <returns>The list of blogs</returns>
         public APIGatewayProxyResponse RootGet(APIGatewayProxyRequest request, ILambdaContext context)
+        {
+            var response = new APIGatewayProxyResponse
+            {
+                StatusCode = (int)HttpStatusCode.OK,
+                Body = "Hello AWS Serverless",
+                Headers = new Dictionary<string, string> { { "Content-Type", "text/plain; charset=utf-8" } }
+            };
+
+            return response;
+        }
+
+        /// <summary>
+        /// A Lambda function to respond to GraphQL queries from API Gateway
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>GraphQL endpoint</returns>
+        public APIGatewayProxyResponse GraphQL(APIGatewayProxyRequest request, ILambdaContext context)
         {
             var response = new APIGatewayProxyResponse
             {

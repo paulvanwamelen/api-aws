@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,10 @@ using Amazon.Lambda.TestUtilities;
 using Amazon.Lambda.APIGatewayEvents;
 using Newtonsoft.Json;
 using abstractplay.DB;
+using abstractplay.GraphQL;
+using GraphQL;
+using GraphQL.Types;
+using System.Threading.Tasks;
 
 using abstractplay;
 
@@ -203,6 +208,63 @@ namespace abstractplay.Tests
                 dbc.Remove(ret);
                 dbc.SaveChanges();
             }
+        }
+
+        [Fact]
+        public async void TestGraphQL()
+        {
+            byte[] ownerId = GuidGenerator.GenerateSequentialGuid();
+            Guid playerId = Guid.NewGuid();
+            DateTime now = DateTime.UtcNow;
+            now = new DateTime(now.Ticks - (now.Ticks % TimeSpan.TicksPerSecond), DateTimeKind.Utc);
+            Guid cognitoId = new Guid("f686ace4-1946-4296-a4ff-6191d7e99004");
+
+            using (MyContext dbc = new MyContext())
+            {
+
+                Owners owner;
+                OwnersNames ne;
+
+                owner = new Owners { OwnerId = ownerId, CognitoId = cognitoId.ToByteArray(), PlayerId = playerId.ToByteArray(), DateCreated = now, ConsentDate = now, Anonymous = false, Country = "CA", Tagline = "Lasciate ogni speranza, voi ch'entrate!" };
+                ne = new OwnersNames { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = ownerId, EffectiveFrom = now, Name = "Perlkönig" };
+                owner.OwnersNames.Add(ne);
+                dbc.Add(owner);
+                dbc.SaveChanges();
+            }
+
+            var ctx = new MyContext();
+            //var query = @"{
+            //    user(id: """ + GuidGenerator.HelperBAToString(ownerId) + @""") {
+            //        id,
+            //        name,
+            //        country
+            //    }
+            //}";
+            var query = @"{
+                users(country:""CA"") {
+                    id, name, country
+                }
+            }";
+            //var query = @"{
+            //    __schema {
+            //        queryType {
+            //            name
+            //        }
+            //    }
+            //}";
+            var schema = new Schema { Query = new APQuery(ctx) };
+            var result = await new DocumentExecuter().ExecuteAsync(_ =>
+            {
+                _.Schema = schema;
+                _.Query = query;
+            }).ConfigureAwait(false);
+            var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
+            Console.WriteLine(json);
+
+            //Clean up
+            var ret = ctx.Owners.Single(x => x.OwnerId.Equals(ownerId));
+            ctx.Remove(ret);
+            ctx.SaveChanges();
         }
     }
 }
