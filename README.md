@@ -8,6 +8,10 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 ## Change log
 
+XX XXX XXXX:
+
+* GraphQL library mostly working now. Still experimental.
+
 10 Jun 2018:
 
 * Figured out my database issues. Profiles can now be correctly fetched.  
