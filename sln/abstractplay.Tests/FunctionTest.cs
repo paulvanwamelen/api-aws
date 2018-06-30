@@ -32,23 +32,6 @@ namespace abstractplay.Tests
         }
 
         [Fact]
-        public void TestRootGetMethod()
-        {
-            TestLambdaContext context;
-            APIGatewayProxyRequest request;
-            APIGatewayProxyResponse response;
-
-            Functions functions = new Functions();
-
-
-            request = new APIGatewayProxyRequest();
-            context = new TestLambdaContext();
-            response = functions.RootGet(request, context);
-            Assert.Equal(200, response.StatusCode);
-            Assert.Equal("Hello AWS Serverless", response.Body);
-        }
-
-        [Fact]
         public void TestGuid()
         {
             HashSet<byte[]> guids = new HashSet<byte[]>();

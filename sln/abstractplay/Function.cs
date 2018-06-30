@@ -13,6 +13,9 @@ using Newtonsoft.Json;
 using System.Globalization;
 using System.Diagnostics;
 using abstractplay.DB;
+using abstractplay.GraphQL;
+using GraphQL;
+using GraphQL.Types;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -57,100 +60,26 @@ namespace abstractplay
         }
 
         /// <summary>
-        /// A Lambda function to respond to HTTP Get methods from API Gateway
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns>The list of blogs</returns>
-        public APIGatewayProxyResponse RootGet(APIGatewayProxyRequest request, ILambdaContext context)
-        {
-            var response = new APIGatewayProxyResponse
-            {
-                StatusCode = (int)HttpStatusCode.OK,
-                Body = "Hello AWS Serverless",
-                Headers = new Dictionary<string, string> { { "Content-Type", "text/plain; charset=utf-8" } }
-            };
-
-            return response;
-        }
-
-        /// <summary>
         /// A Lambda function to respond to GraphQL queries from API Gateway
         /// </summary>
         /// <param name="request"></param>
         /// <returns>GraphQL endpoint</returns>
-        public APIGatewayProxyResponse GraphQL(APIGatewayProxyRequest request, ILambdaContext context)
+        public async Task<APIGatewayProxyResponse> GraphQL(APIGatewayProxyRequest request, ILambdaContext context)
         {
+            string query = request.QueryStringParameters["query"];
+            var schema = new Schema { Query = new APQuery(dbc) };
+            var result = await new DocumentExecuter().ExecuteAsync(_ =>
+            {
+                _.Schema = schema;
+                _.Query = query;
+            }).ConfigureAwait(false);
+            var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
+
             var response = new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
-                Body = "Hello AWS Serverless",
-                Headers = new Dictionary<string, string> { { "Content-Type", "text/plain; charset=utf-8" } }
-            };
-
-            return response;
-        }
-
-        public APIGatewayProxyResponse UserGet(APIGatewayProxyRequest request, ILambdaContext context)
-        {
-            APIGatewayProxyResponse response;
-            string ownerIdHex = request.PathParameters["id"];
-            LambdaLogger.Log("Hex ID: " + ownerIdHex);
-
-            //Refetch the object to make sure we're returning canonical data
-            Owners ret;
-            OwnersNames activeName;
-            try
-            {
-                byte[] ownerId = GuidGenerator.HelperStringToBA(ownerIdHex);
-                ret = dbc.Owners
-                    .Include(x => x.OwnersNames)
-                    .Single(x => x.OwnerId.Equals(ownerId) && !x.Anonymous);
-                activeName = ret.OwnersNames.First();
-            }
-            catch (Exception e)
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = "",
-                    message = "Could not find the requested user: " + ownerIdHex
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.NotFound,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                };
-                return response;
-            }
-
-            List<NameHistory> nh = new List<NameHistory>();
-            foreach (var e in ret.OwnersNames.ToArray()) 
-            {
-                NameHistory node = new NameHistory
-                {
-                    name = e.Name,
-                    effective_date = e.EffectiveFrom.ToString("o")
-                };
-                nh.Add(node);
-            }
-            //Return the object.
-            ResponseUser ru = new ResponseUser()
-            {
-                id = ownerIdHex,
-                name = activeName.Name,
-                country = ret.Country,
-                member_since = ret.DateCreated.ToString("o"),
-                tagline = ret.Tagline,
-                name_history = nh
-            };
-            response = new APIGatewayProxyResponse
-            {
-                StatusCode = (int)HttpStatusCode.OK,
-                Body = JsonConvert.SerializeObject(ru),
-                Headers = new Dictionary<string, string> {
-                    { "Content-Type", "text/plain; charset=utf-8" },
-                    { "Link", "<" + SCHEMA_USER + ">; rel=\"describedBy\"" }
-                }
+                Body = json,
+                Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
             };
 
             return response;

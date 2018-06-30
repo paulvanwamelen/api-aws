@@ -30,18 +30,6 @@ provider:
   memorySize: 256
   timeout: 30
   versionFunctions: false
-  environment:
-    db_server: ${file(../apsecrets.yml):db_server}
-    db_database: ${file(../apsecrets.yml):db_database}
-    db_username: ${file(../apsecrets.yml):db_username}
-    db_password: ${file(../apsecrets.yml):db_password}
-  vpc:
-    securityGroupIds:
-      - ${file(../apsecrets.yml):secGroup}
-    subnetIds:
-      - ${file(../apsecrets.yml):subnet1}
-      - ${file(../apsecrets.yml):subnet2}
-      - ${file(../apsecrets.yml):subnet3}
 
 # you can overwrite defaults here
   stage: dev
@@ -75,15 +63,32 @@ provider:
 #    - exclude-me-dir/**
 
 functions:
-  RootGet:
-    handler: abstractplay::abstractplay.Functions::RootGet
+  GraphQL:
+    handler: abstractplay::abstractplay.Functions::GraphQL
+    environment:
+      db_server: ${file(../apsecrets.yml):db_server}
+      db_database: ${file(../apsecrets.yml):db_database}
+      db_username: ${file(../apsecrets.yml):db_username}
+      db_password: ${file(../apsecrets.yml):db_password}
+    vpc:
+      securityGroupIds:
+        - ${file(../apsecrets.yml):secGroup}
+      subnetIds:
+        - ${file(../apsecrets.yml):subnet1}
+        - ${file(../apsecrets.yml):subnet2}
+        - ${file(../apsecrets.yml):subnet3}
     events:
       - http:
-          path: /
+          path: /graphql
           method: get
+          reqValidatorName: 'xRequestValidateQuery'
+          request:
+            parameters:
+              querystrings:
+                query: true
           documentation:
-            summary: "Get basic info and entry points"
-            description: "This is where you'll find basic API information, including announcements, and entry points to the various resources"
+            summary: "GraphQL entry point (read only)"
+            description: "This is how clients are to request data from the service. It is read only! Changes are made through other endpoints."
 
   UsersPost:
     handler: abstractplay::abstractplay.Functions::UsersPost
@@ -99,26 +104,6 @@ functions:
             description: "This is how you create a new profile"
             requestModels:
               "application/json": "RequestUsersPost"
-
-  UserGet:
-    handler: abstractplay::abstractplay.Functions::UserGet
-    events:
-      - http:
-          path: /users/{id}
-          method: get
-          request:
-            parameters:
-              paths:
-                id: true
-          documentation:
-            summary: "Get user profile"
-            description: "Get specific user profile and related resources"
-            methodResponses:
-              -
-                statusCode: "200"
-                responseModels:
-                  "application/json": "ResourceUser"
-
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
@@ -164,6 +149,14 @@ resources:
           Ref: ApiGatewayRestApi
         ValidateRequestBody: true
         ValidateRequestParameters: false
+    xRequestValidateQuery:
+      Type: "AWS::ApiGateway::RequestValidator"
+      Properties:
+        Name: 'reqvalidator-params'
+        RestApiId: 
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: false
+        ValidateRequestParameters: true
 
 #resources:
 #  Resources:
