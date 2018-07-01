@@ -11,6 +11,7 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 XX XXX XXXX:
 
 * `/graphql` is now the only public endpoint that accesses the database behind the VPC. This eliminates the VPC latency on all the other endpoints. But it means that most database writes will be asynchronous. The other endpoints will need to pass write requests via SNS to a dedicated mutator lambda. Maybe the forthcoming Serverless Aurora will eliminate this?
+* Have the private mutator working. Just hashing out some syntax weirdness with the GraphQL library.
 
 10 Jun 2018:
 
