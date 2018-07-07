@@ -98,6 +98,35 @@ functions:
             summary: "GraphQL entry point (read only)"
             description: "This is how clients are to request data from the service. It is read only! Changes are made through other endpoints."
 
+  GraphQLAuth:
+    handler: abstractplay::abstractplay.Functions::GraphQLAuth
+    environment:
+      db_server: ${file(../apsecrets.yml):db_server}
+      db_database: ${file(../apsecrets.yml):db_database}
+      db_username: ${file(../apsecrets.yml):db_username}
+      db_password: ${file(../apsecrets.yml):db_password}
+    vpc:
+      securityGroupIds:
+        - ${file(../apsecrets.yml):secGroup}
+      subnetIds:
+        - ${file(../apsecrets.yml):subnet1}
+        - ${file(../apsecrets.yml):subnet2}
+        - ${file(../apsecrets.yml):subnet3}
+    events:
+      - http:
+          path: /graphqlauth
+          method: get
+          authorizer:
+            arn: ${file(../apsecrets.yml):cognitoarn}
+          reqValidatorName: 'xRequestValidateQuery'
+          request:
+            parameters:
+              querystrings:
+                query: true
+          documentation:
+            summary: "GraphQL entry point (read only)"
+            description: "This is how clients are to request data from the service. It is read only! Changes are made through other endpoints."
+
   Mutator:
     handler: abstractplay::abstractplay.Functions::Mutator
     environment:

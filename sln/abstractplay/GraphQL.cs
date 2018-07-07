@@ -7,6 +7,9 @@ using GraphQL.Types;
 //using GraphQL.Builders;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using Amazon.Lambda.Core;
+using Amazon.Lambda.APIGatewayEvents;
+using Newtonsoft.Json;
 
 namespace abstractplay.GraphQL
 {
@@ -29,6 +32,29 @@ namespace abstractplay.GraphQL
         {
             Field(x => x.Name).Name("name").Description("The display name");
             Field(x => x.EffectiveFrom).Name("effectiveFrom").Description("The date this name was effective from");
+        }
+    }
+
+    public class MeType : UserType
+    {
+        public MeType(): base() {}
+    }
+
+    public class UserContext
+    {
+        public byte[] cognitoId = null;
+
+        public UserContext(APIGatewayProxyRequest request)
+        {
+            string sub;
+            try
+            {
+                sub = request.RequestContext.Authorizer.Claims["sub"];
+                cognitoId = new Guid(sub).ToByteArray();
+            } catch (Exception e)
+            {
+                cognitoId = null;
+            }
         }
     }
 
@@ -64,6 +90,24 @@ namespace abstractplay.GraphQL
         }
     }
 
+    public class APQueryAuth : APQuery
+    {
+        public APQueryAuth(MyContext db) : base(db)
+        {
+            Field<MeType>(
+                "me",
+                resolve: _ =>
+                {
+                    var context = (UserContext)_.UserContext;
+                    if (context.cognitoId == null) {
+                        throw new UnauthorizedAccessException("You do not appear to be logged in");
+                    }
+                    return db.Owners.Include(x => x.OwnersNames).Single(x => x.CognitoId.Equals(context.cognitoId));
+                }
+            );
+        }
+    }
+
     public class ProfileInputType : InputObjectGraphType
     {
         public ProfileInputType()
@@ -79,15 +123,15 @@ namespace abstractplay.GraphQL
         }
     }
 
-    public struct ProfileDTO
+    public class ProfileDTO
     {
-        public string ownerId;
-        public string cognitoId;
-        public string playerId;
-        public string name;
-        public bool anonymous;
-        public string country;
-        public string tagline;
+        public string ownerId {get; set;}
+        public string cognitoId {get; set;}
+        public string playerId {get; set;}
+        public string name {get; set;}
+        public bool anonymous {get; set;}
+        public string country {get; set;}
+        public string tagline {get; set;}
     }
 
     public class APMutator : ObjectGraphType
@@ -102,9 +146,22 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var profile = _.GetArgument<ProfileDTO>("input");
                     DateTime now = DateTime.UtcNow;
-                    Guid cognitoId = new Guid(profile.cognitoId);
-                    Owners owner = new Owners { OwnerId = GuidGenerator.HelperStringToBA(profile.ownerId), CognitoId = cognitoId.ToByteArray(), PlayerId = GuidGenerator.HelperStringToBA(profile.playerId), DateCreated = now, ConsentDate = now, Anonymous = profile.anonymous, Country = profile.country, Tagline = profile.tagline };
-                    OwnersNames ne = new OwnersNames { EntryId = GuidGenerator.GenerateSequentialGuid(), OwnerId = GuidGenerator.HelperStringToBA(profile.ownerId), EffectiveFrom = now, Name = profile.name};
+                    Owners owner = new Owners { 
+                        OwnerId = GuidGenerator.HelperStringToBA(profile.ownerId), 
+                        CognitoId = GuidGenerator.HelperStringToBA(profile.cognitoId), 
+                        PlayerId = GuidGenerator.HelperStringToBA(profile.playerId), 
+                        DateCreated = now, 
+                        ConsentDate = now, 
+                        Anonymous = profile.anonymous, 
+                        Country = profile.country, 
+                        Tagline = profile.tagline 
+                    };
+                    OwnersNames ne = new OwnersNames { 
+                        EntryId = GuidGenerator.GenerateSequentialGuid(), 
+                        OwnerId = GuidGenerator.HelperStringToBA(profile.ownerId), 
+                        EffectiveFrom = now, 
+                        Name = profile.name
+                    };
                     owner.OwnersNames.Add(ne);
                     db.Add(owner);
                     db.SaveChanges();
@@ -122,14 +179,16 @@ namespace abstractplay.GraphQL
         }
     }
 
+    public class APSchemaROAuth : Schema
+    {
+        public APSchemaROAuth(MyContext db)
+        {
+            Query = new APQueryAuth(db);
+        }
+    }
+
     public class APSchemaRW : Schema
     {
-        public APSchemaRW(Func<Type, GraphType> resolveType)
-            : base(resolveType)
-        {
-            Query = (APQuery)resolveType(typeof (APQuery));
-            Mutation = (APMutator)resolveType(typeof (APMutator));
-        }        
         public APSchemaRW(MyContext db)
         {
             Query = new APQuery(db);

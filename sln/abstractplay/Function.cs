@@ -81,6 +81,31 @@ namespace abstractplay
             {
                 _.Schema = schema;
                 _.Query = query;
+                _.ExposeExceptions = true;
+            }).ConfigureAwait(false);
+            var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
+
+            var response = new APIGatewayProxyResponse
+            {
+                StatusCode = (int)HttpStatusCode.OK,
+                Body = json,
+                Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
+            };
+
+            return response;
+        }
+
+        public async Task<APIGatewayProxyResponse> GraphQLAuth(APIGatewayProxyRequest request, ILambdaContext context)
+        {
+            UserContext ucontext = new UserContext(request);
+            string query = request.QueryStringParameters["query"];
+            var schema = new APSchemaROAuth(dbc);
+            var result = await new DocumentExecuter().ExecuteAsync(_ =>
+            {
+                _.Schema = schema;
+                _.Query = query;
+                _.UserContext = ucontext;
+                _.ExposeExceptions = true;
             }).ConfigureAwait(false);
             var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
 
@@ -104,14 +129,19 @@ namespace abstractplay
             var schema = new APSchemaRW(dbc);
             foreach (var rec in snsevent.Records)
             {
-                string query = rec.Sns.Message;
+                dynamic input = JsonConvert.DeserializeObject(rec.Sns.Message);
+                string query = (string)input.query.ToObject(typeof(string));
+                string varjson = JsonConvert.SerializeObject(input.variables);
+                var vars = varjson.ToInputs();
                 var result = await new DocumentExecuter().ExecuteAsync(_ =>
                 {
                     _.Schema = schema;
-                    _.Query = query;
+                    _.Query = input.query;
+                    _.Inputs = vars;
+                    _.ExposeExceptions = true;
                 }).ConfigureAwait(false);
                 var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
-                LambdaLogger.Log("Mutation request received:\nQuery\n" + query + "\nResult\n" + json);
+                LambdaLogger.Log("Mutation request received:\nQuery\n" + rec.Sns.Message + "\nVars\n" + JsonConvert.SerializeObject(vars, Formatting.Indented) + "\nResult\n" + json);
             }
             return null;
         }
@@ -341,17 +371,15 @@ namespace abstractplay
                 country = country,
                 tagline = tagline
             };
-            // var req = new MutateRequest
-            // {
-            //     query = "mutation ($profile:ProfileInput!){ createProfile(input: $profile) {}}",
-            //     variables = new Dictionary<string, object>
-            //     {
-            //         {"input", rec}
-            //     }
-            // };
-            // string query = JsonConvert.SerializeObject(req);
-            //string query = "{mutation {createProfile(input: "+ JsonConvert.SerializeObject(rec) +")}}";
-            string query = "mutation {createProfile(input: {ownerId: \"" + rec.ownerId + "\", cognitoId: \""+rec.cognitoId+"\", playerId: \""+rec.playerId+"\", name: \""+rec.name+"\", anonymous: "+rec.anonymous.ToString().ToLower()+", country: \""+rec.country+"\", tagline: \""+rec.tagline+"\"}) {id} }";
+            var req = new MutateRequest
+            {
+                query = "mutation ($profile: ProfileInput!){ createProfile(input: $profile) {id}}",
+                variables = new Dictionary<string, object>
+                {
+                    {"profile", rec}
+                }
+            };
+            string query = JsonConvert.SerializeObject(req);
             string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
             LambdaLogger.Log("The following query is being sent to SNS arn "+ snsarn +":\n" + query);
 
