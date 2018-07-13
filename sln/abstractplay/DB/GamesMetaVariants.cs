@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace abstractplay.DB
 {
-    public partial class GamesInfoVariants
+    public partial class GamesMetaVariants
     {
         public byte[] GameId { get; set; }
         public byte[] VariantId { get; set; }
@@ -11,6 +11,6 @@ namespace abstractplay.DB
         public string Note { get; set; }
         public string Group { get; set; }
 
-        public GamesInfo Game { get; set; }
+        public GamesMeta Game { get; set; }
     }
 }

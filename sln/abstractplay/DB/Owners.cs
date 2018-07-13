@@ -10,7 +10,7 @@ namespace abstractplay.DB
             GamesDataChats = new HashSet<GamesDataChats>();
             GamesDataPlayers = new HashSet<GamesDataPlayers>();
             GamesDataWhoseturn = new HashSet<GamesDataWhoseturn>();
-            GamesInfoTags = new HashSet<GamesInfoTags>();
+            GamesMetaTags = new HashSet<GamesMetaTags>();
             OwnersNames = new HashSet<OwnersNames>();
         }
 
@@ -26,7 +26,7 @@ namespace abstractplay.DB
         public ICollection<GamesDataChats> GamesDataChats { get; set; }
         public ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
         public ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
-        public ICollection<GamesInfoTags> GamesInfoTags { get; set; }
+        public ICollection<GamesMetaTags> GamesMetaTags { get; set; }
         public ICollection<OwnersNames> OwnersNames { get; set; }
     }
 }

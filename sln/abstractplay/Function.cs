@@ -4,8 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-//using System.Net.Http;
-//using System.Net.Http.Headers;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
@@ -19,6 +19,7 @@ using abstractplay.DB;
 using abstractplay.GraphQL;
 using GraphQL;
 using GraphQL.Types;
+using GraphQL.Validation;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -53,9 +54,19 @@ namespace abstractplay
         public Dictionary<string, Object> variables;
     }
 
+    public enum RemoteTypes {AI, GAME};
+
+    public struct PingRequest
+    {
+        public RemoteTypes type;
+        public string id;
+        public string url;
+        public string currstate;
+    }
+
     public class Functions
     {
-        private readonly string SCHEMA_USER = "https://www.abstractplay.com/schemas/resources_user/1-0-0.json";
+        private static readonly string GAMES_URL = "https://games.abstractplay.com/";
         //private static readonly HttpClient client = new HttpClient();
         private static MyContext dbc = new MyContext();
 
@@ -98,12 +109,37 @@ namespace abstractplay
         public async Task<APIGatewayProxyResponse> GraphQLAuth(APIGatewayProxyRequest request, ILambdaContext context)
         {
             UserContext ucontext = new UserContext(request);
-            string query = request.QueryStringParameters["query"];
-            var schema = new APSchemaROAuth(dbc);
+            string query = "";
+            Inputs vars = new Inputs();
+            Schema schema = new Schema();
+            if (request.HttpMethod == "GET")
+            {
+                schema = new APSchemaROAuth(dbc);
+                query = request.QueryStringParameters["query"];
+            } else if (request.HttpMethod == "POST")
+            {
+                if (request.Headers["Content-Type"].ToLower() != "application/json")
+                {
+                    var r = new APIGatewayProxyResponse
+                    {
+                        StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
+                        Body = "This endpoint only accepts 'application/json' content",
+                        Headers = new Dictionary<string, string> { { "Content-Type", "text/plain; charset=utf-8" } }
+                    };
+                    return r;
+                }
+                schema = new APSchemaRWAuth(dbc);
+                dynamic input = JsonConvert.DeserializeObject(request.Body);
+                query = (string)input.query.ToObject(typeof(string));
+                string varjson = JsonConvert.SerializeObject(input.variables);
+                vars = varjson.ToInputs();
+            }
+
             var result = await new DocumentExecuter().ExecuteAsync(_ =>
             {
                 _.Schema = schema;
                 _.Query = query;
+                _.Inputs = vars;
                 _.UserContext = ucontext;
                 _.ExposeExceptions = true;
             }).ConfigureAwait(false);
@@ -146,276 +182,65 @@ namespace abstractplay
             return null;
         }
 
-        public async Task<APIGatewayProxyResponse> UsersPost(APIGatewayProxyRequest request, ILambdaContext context)
+        public APIGatewayProxyResponse GetSequentialGuid(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            //LambdaLogger.Log("Request: " + JsonConvert.SerializeObject(request));
-            //LambdaLogger.Log("Context: " + JsonConvert.SerializeObject(context));
+            string guid = GuidGenerator.HelperBAToString(GuidGenerator.GenerateSequentialGuid());
 
-            APIGatewayProxyResponse response;
-            dynamic body = JsonConvert.DeserializeObject(request.Body);
-
-            //displayName is required
-            string name;
-            StringInfo strinfo;
-            try
+            var response = new APIGatewayProxyResponse
             {
-                name = (string)body.displayName.ToObject(typeof(string));
-                strinfo = new StringInfo(name);
-                //LambdaLogger.Log("Display Name: " + name);
-            } catch (Exception e)
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = JsonConvert.SerializeObject(body),
-                    message = "The 'displayName' field is required."
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.BadRequest,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                };
-                return response;
-            }
-
-            //displayName must be between 3 and 30 characters
-            if ( (strinfo.LengthInTextElements < 3) || (strinfo.LengthInTextElements > 30) )
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = JsonConvert.SerializeObject(body),
-                    message = "The 'displayName' field must be between 3 and 30 utf-8 characters in length."
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.BadRequest,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                };
-                return response;
-            }
-
-            //Country Code
-            string country = null;
-            try
-            {
-                country = (string)body.country.ToObject(typeof(string));
-                country = country.ToUpper();
-                //LambdaLogger.Log("Country: " + country);
-            }
-            catch (Exception e)
-            {
-                //Do nothing because "country" defaults to null.
-                //Ideally we'd check that a property exists, but we can't do that with dynamic variables.
-            }
-
-            if (country != null)
-            {
-                country = (string)body.country.ToObject(typeof(string));
-                country = country.ToUpper();
-                if (country.Length != 2)
-                {
-                    ResponseError r = new ResponseError()
-                    {
-                        request = JsonConvert.SerializeObject(body),
-                        message = "The 'country' field must consist of only two characters, representing a valid ISO 3166-1 alpha-2 country code."
-                    };
-                    response = new APIGatewayProxyResponse
-                    {
-                        StatusCode = (int)HttpStatusCode.BadRequest,
-                        Body = JsonConvert.SerializeObject(r),
-                        Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                    };
-                    return response;
-                }
-            }
-
-            //Tagline
-            string tagline = null;
-            try
-            {
-                tagline = (string)body.tagline.ToObject(typeof(string));
-                strinfo = new StringInfo(tagline);
-                //LambdaLogger.Log("Tagline: " + tagline);
-            } catch (Exception e)
-            {
-                //Do nothing because "tagline" defaults to null.
-                //Ideally we'd check that a property exists, but we can't do that with dynamic variables.
-            }
-            if (tagline != null)
-            {
-                tagline = (string)body.tagline.ToObject(typeof(string));
-                strinfo = new StringInfo(tagline);
-                if (strinfo.LengthInTextElements > 255)
-                {
-                    ResponseError r = new ResponseError()
-                    {
-                        request = JsonConvert.SerializeObject(body),
-                        message = "The 'tagline' field may not exceed 255 characters in length."
-                    };
-                    response = new APIGatewayProxyResponse
-                    {
-                        StatusCode = (int)HttpStatusCode.BadRequest,
-                        Body = JsonConvert.SerializeObject(r),
-                        Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                    };
-                    return response;
-                }
-            }
-
-            //Anonymous?
-            bool anon = false;
-            try
-            {
-                anon = (bool)body.anonymous.ToObject(typeof(bool));
-            } catch (Exception e)
-            {
-                //Do nothing because "anon" defaults to null.
-                //Ideally we'd check that a property exists, but we can't do that with dynamic variables.
-            }
-            //LambdaLogger.Log("Anonymous? " + anon.ToString());
-
-            //Consent
-            bool consent = false;
-            try
-            {
-                consent = (bool)body.consent.ToObject(typeof(bool));
-                //LambdaLogger.Log("Consent? " + consent.ToString());
-            } catch (Exception e)
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = JsonConvert.SerializeObject(body),
-                    message = "You must consent to the terms of service and to the processing of your data to create an account and use Abstract Play."
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.BadRequest,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                };
-                return response;
-            }
-            //LambdaLogger.Log("Consent? " + consent.ToString());
-
-            if (! consent)
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = JsonConvert.SerializeObject(body),
-                    message = "You must consent to the terms of service and to the processing of your data to create an account and use Abstract Play."
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.BadRequest,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                };
-                return response;
-            }
-
-            //Check for cognito ID
-            //LambdaLogger.Log("Checking for duplicate Cognito ID");
-            string sub = null;
-            try
-            {
-                sub = request.RequestContext.Authorizer.Claims["sub"];
-            } catch (Exception e)
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = JsonConvert.SerializeObject(body),
-                    message = "You do not appear to be logged in!"
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.Unauthorized,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> {
-                        { "Content-Type", "application/json; charset=utf-8" },
-                        { "WWW-Authenticate", "OAuth realm=\"https://www.abstractplay.com/play\"" }
-                    }
-                };
-                return response;
-            }
-            if (String.IsNullOrEmpty(sub))
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = JsonConvert.SerializeObject(body),
-                    message = "You do not appear to be logged in!"
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.Unauthorized,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> {
-                        { "Content-Type", "application/json; charset=utf-8" },
-                        { "WWW-Authenticate", "OAuth realm=\"https://www.abstractplay.com/play\"" }
-                    }
-                };
-                return response;
-            }
-            Guid cognitoId = new Guid(sub);
-            //LambdaLogger.Log("Cognito ID: " + cognitoId.ToString());
-
-            //Duplicate checking is no longer done here.
-            //Create the GraphQL query and publish to SNS
-            var rec = new ProfileDTO()
-            {
-                ownerId = GuidGenerator.HelperBAToString(GuidGenerator.GenerateSequentialGuid()),
-                cognitoId = GuidGenerator.HelperBAToString(cognitoId.ToByteArray()),
-                playerId = GuidGenerator.HelperBAToString(Guid.NewGuid().ToByteArray()),
-                name = name,
-                anonymous = anon,
-                country = country,
-                tagline = tagline
-            };
-            var req = new MutateRequest
-            {
-                query = "mutation ($profile: ProfileInput!){ createProfile(input: $profile) {id}}",
-                variables = new Dictionary<string, object>
-                {
-                    {"profile", rec}
-                }
-            };
-            string query = JsonConvert.SerializeObject(req);
-            string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
-            LambdaLogger.Log("The following query is being sent to SNS arn "+ snsarn +":\n" + query);
-
-            try
-            {
-                var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
-                var snsreq = new PublishRequest(snsarn, query);
-                await snsclient.PublishAsync(snsreq).ConfigureAwait(false);
-            } catch (Exception e)
-            {
-                ResponseError r = new ResponseError()
-                {
-                    request = JsonConvert.SerializeObject(body),
-                    message = e.ToString()
-                };
-                response = new APIGatewayProxyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.InternalServerError,
-                    Body = JsonConvert.SerializeObject(r),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
-                };
-                return response;
-            }
-
-            //Return the object.
-            response = new APIGatewayProxyResponse
-            {
-                StatusCode = (int)HttpStatusCode.Accepted,
-                Body = "It may take a few seconds for your profile to be created.",
-                Headers = new Dictionary<string, string> {
-                    { "Content-Type", "text/plain; charset=utf-8" },
-                    { "Location", "/graphql?query={me{id}}" },
-                }
+                StatusCode = (int)HttpStatusCode.OK,
+                Body = guid,
+                Headers = new Dictionary<string, string> { { "Content-Type", "text/plain; charset=utf-8" } }
             };
 
             return response;
+        }        
+
+        public async Task<string> Pinger(SNSEvent snsevent, ILambdaContext context)
+        {
+            foreach (var rec in snsevent.Records)
+            {
+                PingRequest req = (PingRequest)JsonConvert.DeserializeObject(rec.Sns.Message);
+                LambdaLogger.Log("Received the following ping request:\n"+rec.Sns.Message);
+                //check state first
+                bool needMeta = true;
+                if (!String.IsNullOrWhiteSpace(req.currstate))
+                {
+                    LambdaLogger.Log("Fetching state at " + req.url);
+                    using (HttpClient client = new HttpClient())
+                    using (var postbody = new StringContent("{\"mode\": \"ping\"}"))
+                    using (HttpResponseMessage response = await client.PostAsync(req.url, postbody))
+                    using (HttpContent content = response.Content)
+                    {
+                        // ... Read the string.
+                        string result = await content.ReadAsStringAsync();
+                        dynamic input = JsonConvert.DeserializeObject(result);
+                        string state = (string)input.state.ToObject(typeof(string));
+
+                        if (state == req.currstate)
+                        {
+                            LambdaLogger.Log("No state change detected. Halting.");
+                            needMeta = false;
+                        }
+                    }
+                }
+
+                if (needMeta)
+                {
+                    LambdaLogger.Log("Fetching full metadata.");
+                    using (HttpClient client = new HttpClient())
+                    using (var postbody = new StringContent("{\"mode\": \"metadata\"}"))
+                    using (HttpResponseMessage response = await client.PostAsync(req.url, postbody))
+                    using (HttpContent content = response.Content)
+                    {
+                        // ... Read the string.
+                        string result = await content.ReadAsStringAsync();
+                        LambdaLogger.Log("Received the following metadata:\n"+result);
+                        dynamic input = JsonConvert.DeserializeObject(result);
+                    }
+                }
+            }
+            return null;
         }
     }
 }

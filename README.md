@@ -13,6 +13,10 @@ XX XXX XXXX:
 * Only the GraphQL endpoints are now behind the VPC, reducing latency for all the others. But it means that most database writes will be asynchronous.
 * The query and mutator endpoints are fully functioning now.
 * API Gateway doesn't support optional authorization. The headers are either required or not even processed. So for now I'm creating a separate endpoint for authenticated queries, thus allowing "me"-style types.
+* Continuing to expand the data available through GraphQL.
+* Mutations are working!!
+* Working on pinger.
+* Refactored GraphQL code.
 
 10 Jun 2018:
 

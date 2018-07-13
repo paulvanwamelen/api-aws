@@ -18,8 +18,8 @@ plugins:
   - serverless-aws-documentation
   - serverless-reqvalidator-plugin
   - serverless-domain-manager
-  - serverless-plugin-warmup
   - serverless-pseudo-parameters
+  - serverless-plugin-scripts
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -32,12 +32,12 @@ provider:
   timeout: 30
   versionFunctions: false
   environment:
-    sns_mutator: ${self:custom.topicArn}
+    sns_mutator: ${self:custom.snsMutatorArn}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - "sns:Publish"
-      Resource: ${self:custom.topicArn}
+      Resource: ${self:custom.snsMutatorArn}
 
 # you can overwrite defaults here
   stage: dev
@@ -71,7 +71,7 @@ provider:
 #    - exclude-me-dir/**
 
 functions:
-  GraphQL:
+  GraphQLPublic:
     handler: abstractplay::abstractplay.Functions::GraphQL
     environment:
       db_server: ${file(../apsecrets.yml):db_server}
@@ -98,7 +98,7 @@ functions:
             summary: "GraphQL entry point (read only)"
             description: "This is how clients are to request data from the service. It is read only! Changes are made through other endpoints."
 
-  GraphQLAuth:
+  GraphQLAuthGet:
     handler: abstractplay::abstractplay.Functions::GraphQLAuth
     environment:
       db_server: ${file(../apsecrets.yml):db_server}
@@ -124,10 +124,37 @@ functions:
               querystrings:
                 query: true
           documentation:
-            summary: "GraphQL entry point (read only)"
-            description: "This is how clients are to request data from the service. It is read only! Changes are made through other endpoints."
+            summary: "Authenticated GraphQL entry point (read only)"
+            description: "This is how authenticated clients are to request data from the service. Mutation requests can only be made via POST."
 
-  Mutator:
+  GraphQLAuthPost:
+    handler: abstractplay::abstractplay.Functions::GraphQLAuth
+    environment:
+      db_server: ${file(../apsecrets.yml):db_server}
+      db_database: ${file(../apsecrets.yml):db_database}
+      db_username: ${file(../apsecrets.yml):db_username}
+      db_password: ${file(../apsecrets.yml):db_password}
+    vpc:
+      securityGroupIds:
+        - ${file(../apsecrets.yml):secGroup}
+      subnetIds:
+        - ${file(../apsecrets.yml):subnet1}
+        - ${file(../apsecrets.yml):subnet2}
+        - ${file(../apsecrets.yml):subnet3}
+    events:
+      - http:
+          path: /graphqlauth
+          method: post
+          authorizer:
+            arn: ${file(../apsecrets.yml):cognitoarn}
+          reqValidatorName: 'xRequestValidateBody'
+          documentation:
+            summary: "Authenticated GraphQL entry point (read/write)"
+            description: "This is how authenticated clients are to request data from the service. Mutation requests can only be made via POST."
+            requestModels:
+              "application/json": "RequestGraphQLPost"
+
+  MutatorSNS:
     handler: abstractplay::abstractplay.Functions::Mutator
     environment:
       db_server: ${file(../apsecrets.yml):db_server}
@@ -142,22 +169,24 @@ functions:
         - ${file(../apsecrets.yml):subnet2}
         - ${file(../apsecrets.yml):subnet3}
     events:
-      - sns: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.topicName}
+      - sns: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.snsMutatorName}
 
-  UsersPost:
-    handler: abstractplay::abstractplay.Functions::UsersPost
+  Pinger:
+    handler: abstractplay::abstractplay.Functions::Pinger
+    events:
+      - sns: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.snsPingerName}
+
+  GetGuid:
+    handler: abstractplay::abstractplay.Functions::GetSequentialGuid
     events:
       - http:
-          path: /users
-          method: post
-          reqValidatorName: 'xRequestValidateBody'
+          path: /debug/guid
+          method: get
           authorizer:
             arn: ${file(../apsecrets.yml):cognitoarn}
           documentation:
-            summary: "Create new profile"
-            description: "This is how you create a new profile"
-            requestModels:
-              "application/json": "RequestUsersPost"
+            summary: "Generate a new sequential GUID"
+            description: "Generate a new sequential GUID"
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
@@ -211,11 +240,16 @@ resources:
           Ref: ApiGatewayRestApi
         ValidateRequestBody: false
         ValidateRequestParameters: true
-    MyCustomTopic:
+    MutatorTopic:
       Type: AWS::SNS::Topic
       Properties:
-        DisplayName: "The queue that accepts mutate requests"
-        TopicName: ${self:custom.topicName}
+        DisplayName: "SNS queue that accepts mutate requests"
+        TopicName: ${self:custom.snsMutatorName}
+    PingerTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: "SNS queue that accepts game/ai ping requests"
+        TopicName: ${self:custom.snsPingerName}
 
 #resources:
 #  Resources:
@@ -231,10 +265,10 @@ resources:
 custom:
   dotnet:
     slndir: sln/abstractplay
-  topicName: sns-mutator
+  snsMutatorName: sns-mutator
   # cloud formation intrinstic function to get ARN of topic.
-  # `MyCustomTopic` references the cloudformation in `resources`
-  topicArn:
+  # `MutatorTopic` references the cloudformation in `resources`
+  snsMutatorArn:
     Fn::Join:
       - ''
       - - 'arn:aws:sns:'
@@ -243,7 +277,21 @@ custom:
         - Ref: AWS::AccountId
         - ":"
         - Fn::GetAtt:
-          - MyCustomTopic
+          - MutatorTopic
+          - TopicName
+  snsPingerName: sns-pinger
+  # cloud formation intrinstic function to get ARN of topic.
+  # `MutatorTopic` references the cloudformation in `resources`
+  snsPingerArn:
+    Fn::Join:
+      - ''
+      - - 'arn:aws:sns:'
+        - Ref: AWS::Region
+        - ":"
+        - Ref: AWS::AccountId
+        - ":"
+        - Fn::GetAtt:
+          - PingerTopic
           - TopicName
   customDomain:
     domainName: api.abstractplay.com
@@ -259,14 +307,9 @@ custom:
       termsOfService: "https://www.abstractplay.com/terms"
     models:
       -
-        name: "RequestUsersPost"
-        description: "Required body content when POSTing to /users"
+        name: "RequestGraphQLPost"
+        description: "Required body content when POSTing to GraphQL endpoints"
         contentType: "application/json"
-        schema: ${file(models/request_users_post.json)}
-      -
-        name: "ResourceUser"
-        description: "Format of a single user record"
-        contentType: "application/json"
-        schema: ${file(models/resource_user.json)}
+        schema: ${file(models/request_graphql_post.json)}
 
 

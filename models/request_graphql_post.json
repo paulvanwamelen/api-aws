@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "id": "https://www.abstractplay.com/schemas/request_graphql_post.json#",
+    "title": "Required body content when POSTing to GraphQL endpoints",
+    "type": "object",
+    "required": [
+        "query"
+    ],
+    "properties": {
+        "query": {
+            "type": "string",
+            "description": "The query string itself"
+        },
+        "variables": {
+            "type": "object",
+            "description": "Any variables for your query"
+        }
+    }
+}

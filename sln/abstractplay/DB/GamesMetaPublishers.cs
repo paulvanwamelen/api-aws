@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace abstractplay.DB
 {
-    public partial class GamesInfoPublishers
+    public partial class GamesMetaPublishers
     {
-        public GamesInfoPublishers()
+        public GamesMetaPublishers()
         {
-            GamesInfo = new HashSet<GamesInfo>();
+            GamesMeta = new HashSet<GamesMeta>();
         }
 
         public byte[] PublisherId { get; set; }
@@ -16,6 +16,6 @@ namespace abstractplay.DB
         public string EmailAdmin { get; set; }
         public string EmailTechnical { get; set; }
 
-        public ICollection<GamesInfo> GamesInfo { get; set; }
+        public ICollection<GamesMeta> GamesMeta { get; set; }
     }
 }
