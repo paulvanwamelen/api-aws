@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Globalization;
 using GraphQL;
 using GraphQL.Types;
@@ -183,6 +184,117 @@ namespace abstractplay.GraphQL
                     return rec;
                 }
             );
+
+            Field<ChallengeType>(
+                "issueChallenge",
+                description: "Issue a new challenge",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<NewChallengeInputType>> {Name = "input"}
+                ),
+                resolve: _ => {
+                    var context = (UserContext)_.UserContext;
+                    var input = _.GetArgument<NewChallengeDTO>("input");
+
+                    var game = db.GamesMeta.Include(x => x.GamesMetaVariants).Single(x => x.Shortcode.Equals(input.game));
+                    //Validate numPlayers
+                    int[] counts = game.PlayerCounts.Split(',').Select(x => int.Parse(x)).ToArray();
+                    if (! counts.Contains(input.numPlayers))
+                    {
+                        throw new ExecutionError("The number of players you requested ("+input.numPlayers.ToString() + ") is not supported by "+ game.Name +". Only the following are acceptable: " + game.PlayerCounts + ".");
+                    }
+                    //Set clock to default if necessary
+                    if ( (input.clockStart == null) || (input.clockStart < 1) ) 
+                    {
+                        input.clockStart = 72;
+                    }
+                    if ( (input.clockInc == null) || (input.clockInc < 1) ) 
+                    {
+                        input.clockInc = 24;
+                    }
+                    if ( (input.clockMax == null) || (input.clockMax < 1) ) 
+                    {
+                        input.clockMax = 240;
+                    }
+                    //Validate variants
+                    List<string> vars = game.GamesMetaVariants.Select(x => x.Name).ToList();
+                    vars.Add("Unrated");
+                    vars.Add("Hard Time");
+                    foreach (var variant in input.variants)
+                    {
+                        if (! vars.Contains(variant))
+                        {
+                            throw new ExecutionError("The variant '"+variant+"' is not supported by "+game.Name+".");
+                        }
+                    }
+                    //Validate any challengees (including seat)
+                    foreach (var player in input.challengees)
+                    {
+                        if (! db.Owners.Any(x => x.PlayerId.Equals(player)))
+                        {
+                            throw new ExecutionError("Could not find player ID "+player+".");
+                        }
+                    }
+
+                    //Build record
+                    var user = db.Owners.Single(x => x.CognitoId.Equals(context.cognitoId));
+                    byte[] challengeId = GuidGenerator.GenerateSequentialGuid();
+                    var rec = new Challenges {
+                        ChallengeId = challengeId,
+                        GameId = game.GameId,
+                        OwnerId = user.OwnerId,
+                        NumPlayers = (byte)input.numPlayers,
+                        Notes = input.notes,
+                        ClockStart = (ushort)input.clockStart,
+                        ClockInc = (ushort)input.clockInc,
+                        ClockMax = (ushort)input.clockMax,
+                    };
+                    if (input.variants.Length > 0)
+                    {
+                        rec.Variants = String.Join('|', input.variants);
+                    }
+                    //Add issuer
+                    var issuer = new ChallengesPlayers {
+                        EntryId = GuidGenerator.GenerateSequentialGuid(),
+                        ChallengeId = challengeId,
+                        OwnerId = user.OwnerId,
+                        Confirmed = true
+                    };
+                    bool seated = false;
+                    if (input.seat != null)
+                    {
+                        if (input.numPlayers != 2)
+                        {
+                            throw new ExecutionError("The 'seat' field is only meaningful in two-player games.");
+                        }
+                        if ( (input.seat != 1) && (input.seat != 2) )
+                        {
+                            throw new ExecutionError("The only valid values of 'seat' are '1' and '2'.");
+                        }
+                        seated = true;
+                        issuer.Seat = (byte)input.seat;
+                    }
+                    rec.ChallengesPlayers.Add(issuer);
+                    foreach (var player in input.challengees)
+                    {
+                        var node = new ChallengesPlayers {
+                            EntryId = GuidGenerator.GenerateSequentialGuid(),
+                            ChallengeId = challengeId,
+                            OwnerId = GuidGenerator.HelperStringToBA(player),
+                            Confirmed = false
+                        };
+                        if (seated)
+                        {
+                            node.Seat = (byte) ((input.seat % 2) + 1);
+                        }
+                        rec.ChallengesPlayers.Add(node);
+                    }
+
+                    db.Challenges.Add(rec);
+                    db.SaveChanges();
+                    return rec;
+                }
+            );
+
         }
     }
 }

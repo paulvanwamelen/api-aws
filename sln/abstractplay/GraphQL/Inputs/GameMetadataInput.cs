@@ -8,7 +8,7 @@ namespace abstractplay.GraphQL
         {
             Name = "GameMetadataInput";
             Description = "The input required when updating game metadata";
-            Field<StringGraphType>("id");
+            Field<StringGraphType>("shortcode");
             Field<StringGraphType>("state");
             Field<StringGraphType>("version");
             Field<StringGraphType>("description");
@@ -20,7 +20,7 @@ namespace abstractplay.GraphQL
 
     public class GameMetadataDTO
     {
-        public string id {get; set;}
+        public string shortcode {get; set;}
         public string state {get; set;}
         public string version {get; set;}
         public string description {get; set;}

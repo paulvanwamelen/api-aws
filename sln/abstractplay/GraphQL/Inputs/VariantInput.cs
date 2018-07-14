@@ -7,6 +7,8 @@ namespace abstractplay.GraphQL
     {
         public VariantInputType()
         {
+            Name = "VariantInput";
+            Description = "Defines a variant in a game's metadata";
             Field<StringGraphType>("name");
             Field<StringGraphType>("note");
             Field<StringGraphType>("group");

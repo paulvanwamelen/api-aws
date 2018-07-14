@@ -36,6 +36,8 @@ namespace abstractplay.DB
     public partial class MyContext : DbContext
     {
         public virtual DbSet<Announcements> Announcements { get; set; }
+        public virtual DbSet<Challenges> Challenges { get; set; }
+        public virtual DbSet<ChallengesPlayers> ChallengesPlayers { get; set; }
         public virtual DbSet<GamesData> GamesData { get; set; }
         public virtual DbSet<GamesDataChats> GamesDataChats { get; set; }
         public virtual DbSet<GamesDataClocks> GamesDataClocks { get; set; }
@@ -81,6 +83,101 @@ namespace abstractplay.DB
                 entity.Property(e => e.Title)
                     .IsRequired()
                     .HasMaxLength(255);
+            });
+
+            modelBuilder.Entity<Challenges>(entity =>
+            {
+                entity.HasKey(e => e.ChallengeId);
+
+                entity.ToTable("challenges");
+
+                entity.HasIndex(e => e.DateIssued)
+                    .HasName("idx_dateissued");
+
+                entity.HasIndex(e => e.GameId)
+                    .HasName("idx_gameid");
+
+                entity.HasIndex(e => e.OwnerId)
+                    .HasName("idx_ownerid");
+
+                entity.Property(e => e.ChallengeId).HasColumnType("binary(16)");
+
+                entity.Property(e => e.ClockInc).HasDefaultValueSql("'24'");
+
+                entity.Property(e => e.ClockMax).HasDefaultValueSql("'240'");
+
+                entity.Property(e => e.ClockStart).HasDefaultValueSql("'72'");
+
+                entity.Property(e => e.DateIssued)
+                    .HasColumnType("timestamp")
+                    .HasDefaultValueSql("'current_timestamp()'")
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.GameId)
+                    .IsRequired()
+                    .HasColumnType("binary(16)");
+
+                entity.Property(e => e.Notes).HasColumnType("text");
+
+                entity.Property(e => e.Variants).HasColumnType("text");
+
+                entity.Property(e => e.NumPlayers).HasDefaultValueSql("'2'");
+
+                entity.Property(e => e.OwnerId)
+                    .IsRequired()
+                    .HasColumnType("binary(16)");
+
+                entity.HasOne(d => d.Game)
+                    .WithMany(p => p.Challenges)
+                    .HasForeignKey(d => d.GameId)
+                    .HasConstraintName("fk_challenge2game");
+
+                entity.HasOne(d => d.Owner)
+                    .WithMany(p => p.Challenges)
+                    .HasForeignKey(d => d.OwnerId)
+                    .HasConstraintName("fk_challenge2issuer");
+            });
+
+            modelBuilder.Entity<ChallengesPlayers>(entity =>
+            {
+                entity.HasKey(e => e.EntryId);
+
+                entity.ToTable("challenges_players");
+
+                entity.HasIndex(e => e.ChallengeId)
+                    .HasName("idx_challengeid");
+
+                entity.HasIndex(e => e.Confirmed)
+                    .HasName("idx_confirmed");
+
+                entity.HasIndex(e => e.OwnerId)
+                    .HasName("idx_ownerid");
+
+                entity.Property(e => e.EntryId).HasColumnType("binary(16)");
+
+                entity.Property(e => e.ChallengeId)
+                    .IsRequired()
+                    .HasColumnType("binary(16)");
+
+                entity.Property(e => e.Confirmed)
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValueSql("'1'");
+
+                entity.Property(e => e.OwnerId)
+                    .IsRequired()
+                    .HasColumnType("binary(16)");
+
+                entity.Property(e => e.Seat).HasColumnType("tinyint(4)");
+
+                entity.HasOne(d => d.Challenge)
+                    .WithMany(p => p.ChallengesPlayers)
+                    .HasForeignKey(d => d.ChallengeId)
+                    .HasConstraintName("fk_entry2challenge");
+
+                entity.HasOne(d => d.Owner)
+                    .WithMany(p => p.ChallengesPlayers)
+                    .HasForeignKey(d => d.OwnerId)
+                    .HasConstraintName("fk_entry2owner");
             });
 
             modelBuilder.Entity<GamesData>(entity =>
@@ -215,7 +312,6 @@ namespace abstractplay.DB
                     .WithMany(p => p.GamesDataPlayers)
                     .HasPrincipalKey(p => p.PlayerId)
                     .HasForeignKey(d => d.PlayerId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("fk_player2player");
             });
 

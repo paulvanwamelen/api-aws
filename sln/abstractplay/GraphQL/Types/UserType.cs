@@ -10,12 +10,90 @@ namespace abstractplay.GraphQL
         public UserType()
         {
             Field<StringGraphType>("id", resolve: _ => GuidGenerator.HelperBAToString(((Owners)_.Source).OwnerId), description: "User's ID number");
-            Field<StringGraphType>("name", resolve: _ => ((Owners)_.Source).OwnersNames.OrderByDescending(x => x.EffectiveFrom).First().Name, description: "User's current display name.");
-            Field(x => x.DateCreated, nullable: true).Name("created").Description("The date this account was created.");
-            Field(x => x.Country, nullable: true).Name("country").Description("The ISO Alpha-2 code of the country the user says they're from.");
-            Field(x => x.Tagline, nullable: true).Name("tagline").Description("The user's tagline.");
-            Field<ListGraphType<NameHistoryType>>("nameHistory", resolve: _ => ((Owners)_.Source).OwnersNames.ToArray(), description: "Past display names this player has used");
-            Field<ListGraphType<TagType>>("tags", resolve: _ => ((Owners)_.Source).GamesMetaTags, description: "The tags this user has applied");
+            Field<StringGraphType>(
+                "name", 
+                description: "User's current display name",
+                resolve: _ => 
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.OwnersNames.OrderByDescending(x => x.EffectiveFrom).First().Name;
+                    }
+                }
+            );
+            Field<DateGraphType>(
+                "created",
+                description: "The date this account was created",
+                resolve: _ => 
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.DateCreated;
+                    }
+                }
+            );
+            Field<DateGraphType>(
+                "country",
+                description: "The country the user says they're from",
+                resolve: _ => 
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.Country;
+                    }
+                }
+            );
+            Field<DateGraphType>(
+                "tagline",
+                description: "The user's tagline",
+                resolve: _ => 
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.Tagline;
+                    }
+                }
+            );
+            Field<ListGraphType<NameHistoryType>>(
+                "nameHistory", 
+                description: "Past display names this player has used",
+                resolve: _ => 
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.OwnersNames.ToArray();
+                    }
+                }
+            );
+            Field<ListGraphType<TagType>>(
+                "tags", 
+                description: "The tags this user has applied",
+                resolve: _ => 
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.GamesMetaTags.ToArray();
+                    }
+                }
+            );
         }
     }
 }

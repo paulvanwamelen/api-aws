@@ -7,6 +7,7 @@ namespace abstractplay.DB
     {
         public GamesMeta()
         {
+            Challenges = new HashSet<Challenges>();
             GamesMetaStatus = new HashSet<GamesMetaStatus>();
             GamesMetaTags = new HashSet<GamesMetaTags>();
             GamesMetaVariants = new HashSet<GamesMetaVariants>();
@@ -26,6 +27,7 @@ namespace abstractplay.DB
         public string Changelog { get; set; }
 
         public GamesMetaPublishers Publisher { get; set; }
+        public ICollection<Challenges> Challenges { get; set; }
         public ICollection<GamesMetaStatus> GamesMetaStatus { get; set; }
         public ICollection<GamesMetaTags> GamesMetaTags { get; set; }
         public ICollection<GamesMetaVariants> GamesMetaVariants { get; set; }

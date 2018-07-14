@@ -7,6 +7,8 @@ namespace abstractplay.DB
     {
         public Owners()
         {
+            Challenges = new HashSet<Challenges>();
+            ChallengesPlayers = new HashSet<ChallengesPlayers>();
             GamesDataChats = new HashSet<GamesDataChats>();
             GamesDataPlayers = new HashSet<GamesDataPlayers>();
             GamesDataWhoseturn = new HashSet<GamesDataWhoseturn>();
@@ -23,6 +25,8 @@ namespace abstractplay.DB
         public bool Anonymous { get; set; }
         public string Tagline { get; set; }
 
+        public ICollection<Challenges> Challenges { get; set; }
+        public ICollection<ChallengesPlayers> ChallengesPlayers { get; set; }
         public ICollection<GamesDataChats> GamesDataChats { get; set; }
         public ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
         public ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }

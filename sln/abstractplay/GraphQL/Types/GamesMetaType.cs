@@ -21,6 +21,22 @@ namespace abstractplay.GraphQL
             Field<PublisherType>("publisher", resolve: _ => ((GamesMeta)_.Source).Publisher, description: "The game's publisher");
             Field<ListGraphType<VariantType>>("variants", resolve: _ => ((GamesMeta)_.Source).GamesMetaVariants.ToArray(), description: "The game's available variants (doesn't include built-in, universal variants)");
             Field<ListGraphType<TagType>>("tags", resolve: _ => ((GamesMeta)_.Source).GamesMetaTags, description: "The tags applied to this game");
+            Field<ListGraphType<GameStatusType>>("statusHistory", resolve: _ => ((GamesMeta)_.Source).GamesMetaStatus.ToArray(), description: "List of associated status messages");
+            Field<BooleanGraphType>(
+                "isUp", 
+                resolve: _ => 
+                {
+                    var rec = ((GamesMeta)_.Source).GamesMetaStatus.OrderByDescending(x => x.Timestamp).FirstOrDefault();
+                    if (rec != null) 
+                    {
+                        return rec.IsUp;
+                    } else 
+                    {
+                        return null;
+                    }
+                },
+                description: "The result of the last status check of the game's code"
+            );
         }
     }
 }

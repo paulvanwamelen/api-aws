@@ -55,14 +55,14 @@ namespace abstractplay.GraphQL
                     var shortcode = _.GetArgument<string>("shortcode");
                     if (!String.IsNullOrWhiteSpace(id))
                     {
-                        return db.GamesMeta.Include(x => x.Publisher).Single(x => x.GameId.Equals(GuidGenerator.HelperStringToBA(id)));
+                        return db.GamesMeta.Include(x => x.Publisher).Include(x => x.GamesMetaVariants).Include(x => x.GamesMetaTags).Include(x => x.GamesMetaStatus).Single(x => x.GameId.Equals(GuidGenerator.HelperStringToBA(id)));
 
                     } else if (!String.IsNullOrWhiteSpace(shortcode))
                     {
-                        return db.GamesMeta.Include(x => x.Publisher).Single(x => x.Shortcode.Equals(shortcode));
+                        return db.GamesMeta.Include(x => x.Publisher).Include(x => x.GamesMetaVariants).Include(x => x.GamesMetaTags).Include(x => x.GamesMetaStatus).Single(x => x.Shortcode.Equals(shortcode));
                     } else 
                     {
-                        throw new ExecutionError("You must provide either the game's unique ID or short code.");
+                        throw new ExecutionError("You must provide either the game's unique ID or its shortcode.");
                     }
                 }
             );
@@ -71,7 +71,7 @@ namespace abstractplay.GraphQL
                 description: "Metadata for multiple games",
                 resolve: _ =>
                 {
-                    return db.GamesMeta.Include(x => x.Publisher).ToArray();
+                    return db.GamesMeta.Include(x => x.Publisher).Include(x => x.GamesMetaVariants).Include(x => x.GamesMetaTags).Include(x => x.GamesMetaStatus).ToArray();
                 }
             );
         }

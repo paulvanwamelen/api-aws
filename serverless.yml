@@ -20,6 +20,7 @@ provider:
   versionFunctions: false
   environment:
     sns_mutator: ${self:custom.snsMutatorArn}
+    sns_pinger: ${self:custom.snsPingerArn}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -31,7 +32,7 @@ provider:
 
 functions:
   GraphQLPublic:
-    handler: abstractplay::abstractplay.Functions::GraphQL
+    handler: abstractplay::abstractplay.DBFunctions::GraphQL
     environment:
       db_server: ${file(../apsecrets.yml):db_server}
       db_database: ${file(../apsecrets.yml):db_database}
@@ -58,7 +59,7 @@ functions:
             description: "This is how clients are to request data from the service. It is read only! Changes are made through other endpoints."
 
   GraphQLAuthGet:
-    handler: abstractplay::abstractplay.Functions::GraphQLAuth
+    handler: abstractplay::abstractplay.DBFunctions::GraphQLAuth
     environment:
       db_server: ${file(../apsecrets.yml):db_server}
       db_database: ${file(../apsecrets.yml):db_database}
@@ -87,7 +88,7 @@ functions:
             description: "This is how authenticated clients are to request data from the service. Mutation requests can only be made via POST."
 
   GraphQLAuthPost:
-    handler: abstractplay::abstractplay.Functions::GraphQLAuth
+    handler: abstractplay::abstractplay.DBFunctions::GraphQLAuth
     environment:
       db_server: ${file(../apsecrets.yml):db_server}
       db_database: ${file(../apsecrets.yml):db_database}
@@ -114,7 +115,7 @@ functions:
               "application/json": "RequestGraphQLPost"
 
   MutatorSNS:
-    handler: abstractplay::abstractplay.Functions::Mutator
+    handler: abstractplay::abstractplay.DBFunctions::Mutator
     environment:
       db_server: ${file(../apsecrets.yml):db_server}
       db_database: ${file(../apsecrets.yml):db_database}

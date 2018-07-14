@@ -15,8 +15,10 @@ XX XXX XXXX:
 * API Gateway doesn't support optional authorization. The headers are either required or not even processed. So for now I'm creating a separate endpoint for authenticated queries, thus allowing "me"-style types.
 * Continuing to expand the data available through GraphQL.
 * Mutations are working!!
-* Working on pinger.
 * Refactored GraphQL code.
+* Games can now be pinged and metadata updated.
+* Game status now updates during pings.
+* You can now issue challenges!
 
 10 Jun 2018:
 
