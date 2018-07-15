@@ -22,7 +22,7 @@ namespace abstractplay.GraphQL
                 resolve: _ =>
                 {
                     var id = _.GetArgument<string>("id");
-                    return db.Owners.Include(x => x.OwnersNames).Single(x => x.OwnerId.Equals(GuidGenerator.HelperStringToBA(id)) && !x.Anonymous);
+                    return db.Owners.Single(x => x.OwnerId.Equals(GuidGenerator.HelperStringToBA(id)) && !x.Anonymous);
                 }
             );
             Field<ListGraphType<UserType>>(
@@ -34,11 +34,11 @@ namespace abstractplay.GraphQL
                     var country = _.GetArgument<string>("country");
                     if (String.IsNullOrWhiteSpace(country))
                     {
-                        return db.Owners.Include(x => x.OwnersNames).Where(x => !x.Anonymous).ToArray();
+                        return db.Owners.Where(x => !x.Anonymous).ToArray();
                     }
                     else
                     {
-                        return db.Owners.Include(x => x.OwnersNames).Where(x => x.Country.Equals(country) && !x.Anonymous).ToArray();
+                        return db.Owners.Where(x => x.Country.Equals(country) && !x.Anonymous).ToArray();
                     }
                 }
             );
@@ -55,11 +55,11 @@ namespace abstractplay.GraphQL
                     var shortcode = _.GetArgument<string>("shortcode");
                     if (!String.IsNullOrWhiteSpace(id))
                     {
-                        return db.GamesMeta.Include(x => x.Publisher).Include(x => x.GamesMetaVariants).Include(x => x.GamesMetaTags).Include(x => x.GamesMetaStatus).Single(x => x.GameId.Equals(GuidGenerator.HelperStringToBA(id)));
+                        return db.GamesMeta.Single(x => x.GameId.Equals(GuidGenerator.HelperStringToBA(id)));
 
                     } else if (!String.IsNullOrWhiteSpace(shortcode))
                     {
-                        return db.GamesMeta.Include(x => x.Publisher).Include(x => x.GamesMetaVariants).Include(x => x.GamesMetaTags).Include(x => x.GamesMetaStatus).Single(x => x.Shortcode.Equals(shortcode));
+                        return db.GamesMeta.Single(x => x.Shortcode.Equals(shortcode));
                     } else 
                     {
                         throw new ExecutionError("You must provide either the game's unique ID or its shortcode.");
@@ -71,8 +71,24 @@ namespace abstractplay.GraphQL
                 description: "Metadata for multiple games",
                 resolve: _ =>
                 {
-                    return db.GamesMeta.Include(x => x.Publisher).Include(x => x.GamesMetaVariants).Include(x => x.GamesMetaTags).Include(x => x.GamesMetaStatus).ToArray();
+                    return db.GamesMeta.ToArray();
                 }
+            );
+
+            Field<ChallengeType>(
+                "challenge",
+                description: "A specific challenge",
+                arguments: new QueryArguments(new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id" }),
+                resolve: _ =>
+                {
+                    var id = _.GetArgument<string>("id");
+                    return db.Challenges.Single(x => x.ChallengeId.Equals(GuidGenerator.HelperStringToBA(id)));
+                }
+            );
+            Field<ListGraphType<ChallengeType>>(
+                "challenges",
+                description: "A list of all challenges",
+                resolve: _ => db.Challenges.ToArray()
             );
         }
     }

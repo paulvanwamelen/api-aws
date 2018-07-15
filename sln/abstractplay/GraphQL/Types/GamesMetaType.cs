@@ -1,5 +1,6 @@
 using System.Linq;
 using GraphQL.Types;
+using Microsoft.EntityFrameworkCore;
 
 using abstractplay.DB;
 
@@ -36,6 +37,11 @@ namespace abstractplay.GraphQL
                     }
                 },
                 description: "The result of the last status check of the game's code"
+            );
+            Field<ListGraphType<ChallengeType>>(
+                "challenges",
+                description: "Challenges associated with this game",
+                resolve: _ => ((GamesMeta)_.Source).Challenges.ToArray()
             );
         }
     }

@@ -19,9 +19,9 @@ namespace abstractplay.DB
         public bool Alert { get; set; }
         public string Variants { get; set; }
 
-        public ICollection<GamesDataChats> GamesDataChats { get; set; }
-        public ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
-        public ICollection<GamesDataStates> GamesDataStates { get; set; }
-        public ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
+        public virtual ICollection<GamesDataChats> GamesDataChats { get; set; }
+        public virtual ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
+        public virtual ICollection<GamesDataStates> GamesDataStates { get; set; }
+        public virtual ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
     }
 }

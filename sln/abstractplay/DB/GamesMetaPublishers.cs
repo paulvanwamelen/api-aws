@@ -16,6 +16,6 @@ namespace abstractplay.DB
         public string EmailAdmin { get; set; }
         public string EmailTechnical { get; set; }
 
-        public ICollection<GamesMeta> GamesMeta { get; set; }
+        public virtual ICollection<GamesMeta> GamesMeta { get; set; }
     }
 }

@@ -24,7 +24,7 @@ namespace abstractplay.GraphQL
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<GameMetadataDTO>("input");
 
-                    var game = db.GamesMeta.Include(x => x.GamesMetaVariants).Single(x => x.Shortcode.Equals(input.shortcode));
+                    var game = db.GamesMeta.Single(x => x.Shortcode.Equals(input.shortcode));
                     game.State = input.state;
                     game.Version = input.version;
                     game.Description = input.description;
@@ -59,7 +59,7 @@ namespace abstractplay.GraphQL
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<GameStatusDTO>("input");
 
-                    var game = db.GamesMeta.Include(x => x.GamesMetaStatus).Single(x => x.Shortcode.Equals(input.shortcode));
+                    var game = db.GamesMeta.Single(x => x.Shortcode.Equals(input.shortcode));
                     var status = new GamesMetaStatus {
                         StatusId = GuidGenerator.GenerateSequentialGuid(),
                         GameId = game.GameId,

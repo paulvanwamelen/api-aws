@@ -38,7 +38,7 @@ namespace abstractplay.GraphQL
                     }
                 }
             );
-            Field<DateGraphType>(
+            Field<StringGraphType>(
                 "country",
                 description: "The country the user says they're from",
                 resolve: _ => 
@@ -52,7 +52,7 @@ namespace abstractplay.GraphQL
                     }
                 }
             );
-            Field<DateGraphType>(
+            Field<StringGraphType>(
                 "tagline",
                 description: "The user's tagline",
                 resolve: _ => 
@@ -91,6 +91,20 @@ namespace abstractplay.GraphQL
                         return null;
                     } else {
                         return rec.GamesMetaTags.ToArray();
+                    }
+                }
+            );
+            Field<ListGraphType<ChallengeType>>(
+                "challenges", 
+                description: "Challenges this user has issued",
+                resolve: _ => 
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.Challenges.ToArray();
                     }
                 }
             );

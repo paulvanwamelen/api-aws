@@ -10,6 +10,6 @@ namespace abstractplay.DB
         public string Name { get; set; }
         public DateTime EffectiveFrom { get; set; }
 
-        public Owners Owner { get; set; }
+        public virtual Owners Owner { get; set; }
     }
 }

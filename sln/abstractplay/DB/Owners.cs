@@ -25,12 +25,12 @@ namespace abstractplay.DB
         public bool Anonymous { get; set; }
         public string Tagline { get; set; }
 
-        public ICollection<Challenges> Challenges { get; set; }
-        public ICollection<ChallengesPlayers> ChallengesPlayers { get; set; }
-        public ICollection<GamesDataChats> GamesDataChats { get; set; }
-        public ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
-        public ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
-        public ICollection<GamesMetaTags> GamesMetaTags { get; set; }
-        public ICollection<OwnersNames> OwnersNames { get; set; }
+        public virtual ICollection<Challenges> Challenges { get; set; }
+        public virtual ICollection<ChallengesPlayers> ChallengesPlayers { get; set; }
+        public virtual ICollection<GamesDataChats> GamesDataChats { get; set; }
+        public virtual ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
+        public virtual ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
+        public virtual ICollection<GamesMetaTags> GamesMetaTags { get; set; }
+        public virtual ICollection<OwnersNames> OwnersNames { get; set; }
     }
 }

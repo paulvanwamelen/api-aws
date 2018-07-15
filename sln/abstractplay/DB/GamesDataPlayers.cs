@@ -9,7 +9,7 @@ namespace abstractplay.DB
         public byte[] PlayerId { get; set; }
         public int Seat { get; set; }
 
-        public GamesData Game { get; set; }
-        public Owners Player { get; set; }
+        public virtual GamesData Game { get; set; }
+        public virtual Owners Player { get; set; }
     }
 }

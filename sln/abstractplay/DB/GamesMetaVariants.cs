@@ -11,6 +11,6 @@ namespace abstractplay.DB
         public string Note { get; set; }
         public string Group { get; set; }
 
-        public GamesMeta Game { get; set; }
+        public virtual GamesMeta Game { get; set; }
     }
 }

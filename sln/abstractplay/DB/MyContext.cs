@@ -1,38 +1,10 @@
 ﻿using System;
-using System.Reflection;
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace abstractplay.DB
 {
-    public class MyEntityMaterializerSource : EntityMaterializerSource
-    {
-        private static readonly MethodInfo NormalizeMethod = typeof(DateTimeMapper).GetTypeInfo().GetMethod(nameof(DateTimeMapper.Normalize));
-
-        public override Expression CreateReadValueExpression(Expression valueBuffer, Type type, int index, IProperty property = null)
-        {
-            if (type == typeof(DateTime))
-            {
-                return Expression.Call(
-                    NormalizeMethod,
-                    base.CreateReadValueExpression(valueBuffer, type, index, property)
-                );
-            }
-
-            return base.CreateReadValueExpression(valueBuffer, type, index, property);
-        }
-    }
-
-    public static class DateTimeMapper
-    {
-        public static DateTime Normalize(DateTime value)
-        {
-            return DateTime.SpecifyKind(value, DateTimeKind.Utc);
-        }
-    }
-
     public partial class MyContext : DbContext
     {
         public virtual DbSet<Announcements> Announcements { get; set; }
@@ -52,20 +24,6 @@ namespace abstractplay.DB
         public virtual DbSet<Owners> Owners { get; set; }
         public virtual DbSet<OwnersNames> OwnersNames { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                string db_server = System.Environment.GetEnvironmentVariable("db_server");
-                string db_database = System.Environment.GetEnvironmentVariable("db_database");
-                string db_username = System.Environment.GetEnvironmentVariable("db_username");
-                string db_password = System.Environment.GetEnvironmentVariable("db_password");
-                optionsBuilder
-                .UseMySql("Server=" + db_server + ";database=" + db_database + ";uid=" + db_username + ";pwd=" + db_password + ";");
-                optionsBuilder.ReplaceService<IEntityMaterializerSource, MyEntityMaterializerSource>();
-            }
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Announcements>(entity =>
@@ -82,7 +40,7 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.Title)
                     .IsRequired()
-                    .HasMaxLength(255);
+                    .HasColumnType("varchar(255)");
             });
 
             modelBuilder.Entity<Challenges>(entity =>
@@ -100,7 +58,7 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.OwnerId)
                     .HasName("idx_ownerid");
 
-                entity.Property(e => e.ChallengeId).HasColumnType("binary(16)");
+                entity.Property(e => e.ChallengeId).HasMaxLength(16);
 
                 entity.Property(e => e.ClockInc).HasDefaultValueSql("'24'");
 
@@ -110,22 +68,21 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.DateIssued)
                     .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'current_timestamp()'")
-                    .ValueGeneratedOnAddOrUpdate();
+                    .HasDefaultValueSql("'current_timestamp()'");
 
                 entity.Property(e => e.GameId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.Notes).HasColumnType("text");
-
-                entity.Property(e => e.Variants).HasColumnType("text");
 
                 entity.Property(e => e.NumPlayers).HasDefaultValueSql("'2'");
 
                 entity.Property(e => e.OwnerId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
+
+                entity.Property(e => e.Variants).HasColumnType("text");
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.Challenges)
@@ -153,21 +110,17 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.OwnerId)
                     .HasName("idx_ownerid");
 
-                entity.Property(e => e.EntryId).HasColumnType("binary(16)");
+                entity.Property(e => e.EntryId).HasMaxLength(16);
 
                 entity.Property(e => e.ChallengeId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
-                entity.Property(e => e.Confirmed)
-                    .HasColumnType("tinyint(1)")
-                    .HasDefaultValueSql("'1'");
+                entity.Property(e => e.Confirmed).HasColumnType("bit(1)");
 
                 entity.Property(e => e.OwnerId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
-
-                entity.Property(e => e.Seat).HasColumnType("tinyint(4)");
+                    .HasMaxLength(16);
 
                 entity.HasOne(d => d.Challenge)
                     .WithMany(p => p.ChallengesPlayers)
@@ -195,19 +148,15 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Variants)
                     .HasName("idx_variants");
 
-                entity.Property(e => e.EntryId).HasColumnType("binary(16)");
+                entity.Property(e => e.EntryId).HasMaxLength(16);
 
-                entity.Property(e => e.Alert)
-                    .HasColumnType("tinyint(1)")
-                    .HasDefaultValueSql("'0'");
+                entity.Property(e => e.Alert).HasColumnType("bit(1)");
 
-                entity.Property(e => e.Closed)
-                    .HasColumnType("tinyint(1)")
-                    .HasDefaultValueSql("'0'");
+                entity.Property(e => e.Closed).HasColumnType("bit(1)");
 
                 entity.Property(e => e.GameId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.Variants).HasColumnType("text");
             });
@@ -232,11 +181,11 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.ChatId)
                     .HasColumnName("ChatID")
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.GameId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.Message)
                     .IsRequired()
@@ -244,7 +193,7 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.PlayerId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnType("timestamp")
@@ -270,15 +219,13 @@ namespace abstractplay.DB
 
                 entity.ToTable("games_data_clocks");
 
-                entity.Property(e => e.GameId).HasColumnType("binary(16)");
+                entity.Property(e => e.GameId).HasMaxLength(16);
 
-                entity.Property(e => e.PlayerId).HasColumnType("binary(16)");
+                entity.Property(e => e.PlayerId).HasMaxLength(16);
 
                 entity.Property(e => e.Current).HasColumnType("int(11)");
 
-                entity.Property(e => e.Frozen)
-                    .HasColumnType("tinyint(1)")
-                    .HasDefaultValueSql("'0'");
+                entity.Property(e => e.Frozen).HasColumnType("bit(1)");
 
                 entity.Property(e => e.Increment).HasColumnType("int(11)");
 
@@ -297,9 +244,9 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Seat)
                     .HasName("idx_seat");
 
-                entity.Property(e => e.GameId).HasColumnType("binary(16)");
+                entity.Property(e => e.GameId).HasMaxLength(16);
 
-                entity.Property(e => e.PlayerId).HasColumnType("binary(16)");
+                entity.Property(e => e.PlayerId).HasMaxLength(16);
 
                 entity.Property(e => e.Seat).HasColumnType("int(11)");
 
@@ -327,11 +274,11 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Timestamp)
                     .HasName("idx_timestamp");
 
-                entity.Property(e => e.StateId).HasColumnType("binary(16)");
+                entity.Property(e => e.StateId).HasMaxLength(16);
 
                 entity.Property(e => e.GameId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.State)
                     .IsRequired()
@@ -357,9 +304,9 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.PlayerId)
                     .HasName("fk_turn2player");
 
-                entity.Property(e => e.GameId).HasColumnType("binary(16)");
+                entity.Property(e => e.GameId).HasMaxLength(16);
 
-                entity.Property(e => e.PlayerId).HasColumnType("binary(16)");
+                entity.Property(e => e.PlayerId).HasMaxLength(16);
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.GamesDataWhoseturn)
@@ -415,7 +362,7 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Version)
                     .HasName("idx_version");
 
-                entity.Property(e => e.GameId).HasColumnType("binary(16)");
+                entity.Property(e => e.GameId).HasMaxLength(16);
 
                 entity.Property(e => e.Changelog).HasColumnType("text");
 
@@ -423,34 +370,32 @@ namespace abstractplay.DB
                     .IsRequired()
                     .HasColumnType("text");
 
-                entity.Property(e => e.IsLive)
-                    .HasColumnType("tinyint(1)")
-                    .HasDefaultValueSql("'0'");
+                entity.Property(e => e.IsLive).HasColumnType("bit(1)");
 
                 entity.Property(e => e.LiveDate).HasColumnType("datetime");
 
                 entity.Property(e => e.Name)
                     .IsRequired()
-                    .HasMaxLength(255);
+                    .HasColumnType("varchar(255)");
 
                 entity.Property(e => e.PlayerCounts)
                     .IsRequired()
-                    .HasMaxLength(255)
+                    .HasColumnType("varchar(255)")
                     .HasDefaultValueSql("'2'");
 
-                entity.Property(e => e.PublisherId).HasColumnType("binary(16)");
+                entity.Property(e => e.PublisherId).HasMaxLength(16);
 
                 entity.Property(e => e.Shortcode)
                     .IsRequired()
-                    .HasMaxLength(25);
+                    .HasColumnType("varchar(25)");
 
-                entity.Property(e => e.State).HasMaxLength(255);
+                entity.Property(e => e.State).HasColumnType("varchar(255)");
 
-                entity.Property(e => e.Url).HasMaxLength(255);
+                entity.Property(e => e.Url).HasColumnType("varchar(255)");
 
                 entity.Property(e => e.Version)
                     .IsRequired()
-                    .HasMaxLength(10);
+                    .HasColumnType("varchar(10)");
 
                 entity.HasOne(d => d.Publisher)
                     .WithMany(p => p.GamesMeta)
@@ -477,17 +422,17 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Url)
                     .HasName("idx_url");
 
-                entity.Property(e => e.PublisherId).HasColumnType("binary(16)");
+                entity.Property(e => e.PublisherId).HasMaxLength(16);
 
-                entity.Property(e => e.EmailAdmin).HasMaxLength(255);
+                entity.Property(e => e.EmailAdmin).HasColumnType("varchar(255)");
 
-                entity.Property(e => e.EmailTechnical).HasMaxLength(255);
+                entity.Property(e => e.EmailTechnical).HasColumnType("varchar(255)");
 
                 entity.Property(e => e.Name)
                     .IsRequired()
-                    .HasMaxLength(255);
+                    .HasColumnType("varchar(255)");
 
-                entity.Property(e => e.Url).HasMaxLength(255);
+                entity.Property(e => e.Url).HasColumnType("varchar(255)");
             });
 
             modelBuilder.Entity<GamesMetaStatus>(entity =>
@@ -508,15 +453,15 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Timestamp)
                     .HasName("idx_timestamp");
 
-                entity.Property(e => e.StatusId).HasColumnType("binary(16)");
+                entity.Property(e => e.StatusId).HasMaxLength(16);
 
                 entity.Property(e => e.GameId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
-                entity.Property(e => e.IsUp).HasColumnType("tinyint(1)");
+                entity.Property(e => e.IsUp).HasColumnType("bit(1)");
 
-                entity.Property(e => e.Message).HasMaxLength(255);
+                entity.Property(e => e.Message).HasColumnType("varchar(255)");
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnType("timestamp")
@@ -544,19 +489,19 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Tag)
                     .HasName("idx_tag");
 
-                entity.Property(e => e.EntryId).HasColumnType("binary(16)");
+                entity.Property(e => e.EntryId).HasMaxLength(16);
 
                 entity.Property(e => e.GameId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.OwnerId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.Tag)
                     .IsRequired()
-                    .HasMaxLength(255);
+                    .HasColumnType("varchar(255)");
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.GamesMetaTags)
@@ -587,17 +532,17 @@ namespace abstractplay.DB
                 entity.HasIndex(e => new { e.GameId, e.Name })
                     .HasName("idx_game+name");
 
-                entity.Property(e => e.GameId).HasColumnType("binary(16)");
+                entity.Property(e => e.GameId).HasMaxLength(16);
 
-                entity.Property(e => e.VariantId).HasColumnType("binary(16)");
+                entity.Property(e => e.VariantId).HasMaxLength(16);
 
-                entity.Property(e => e.Group).HasMaxLength(255);
+                entity.Property(e => e.Group).HasColumnType("varchar(255)");
 
                 entity.Property(e => e.Name)
                     .IsRequired()
-                    .HasMaxLength(255);
+                    .HasColumnType("varchar(255)");
 
-                entity.Property(e => e.Note).HasMaxLength(255);
+                entity.Property(e => e.Note).HasColumnType("varchar(255)");
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.GamesMetaVariants)
@@ -628,15 +573,13 @@ namespace abstractplay.DB
                     .HasName("idx_playerid")
                     .IsUnique();
 
-                entity.Property(e => e.OwnerId).HasColumnType("binary(16)");
+                entity.Property(e => e.OwnerId).HasMaxLength(16);
 
-                entity.Property(e => e.Anonymous)
-                    .HasColumnType("tinyint(1)")
-                    .HasDefaultValueSql("'0'");
+                entity.Property(e => e.Anonymous).HasColumnType("bit(1)");
 
                 entity.Property(e => e.CognitoId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.Property(e => e.ConsentDate).HasColumnType("datetime");
 
@@ -646,9 +589,9 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.PlayerId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
-                entity.Property(e => e.Tagline).HasMaxLength(255);
+                entity.Property(e => e.Tagline).HasColumnType("varchar(255)");
             });
 
             modelBuilder.Entity<OwnersNames>(entity =>
@@ -667,17 +610,17 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.OwnerId)
                     .HasName("fk_name2owner");
 
-                entity.Property(e => e.EntryId).HasColumnType("binary(16)");
+                entity.Property(e => e.EntryId).HasMaxLength(16);
 
                 entity.Property(e => e.EffectiveFrom).HasColumnType("datetime");
 
                 entity.Property(e => e.Name)
                     .IsRequired()
-                    .HasMaxLength(30);
+                    .HasColumnType("varchar(30)");
 
                 entity.Property(e => e.OwnerId)
                     .IsRequired()
-                    .HasColumnType("binary(16)");
+                    .HasMaxLength(16);
 
                 entity.HasOne(d => d.Owner)
                     .WithMany(p => p.OwnersNames)

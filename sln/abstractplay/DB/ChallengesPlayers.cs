@@ -11,7 +11,7 @@ namespace abstractplay.DB
         public bool Confirmed { get; set; }
         public byte? Seat { get; set; }
 
-        public Challenges Challenge { get; set; }
-        public Owners Owner { get; set; }
+        public virtual Challenges Challenge { get; set; }
+        public virtual Owners Owner { get; set; }
     }
 }

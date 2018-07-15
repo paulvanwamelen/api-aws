@@ -13,9 +13,12 @@
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.1.2" />
     <PackageReference Include="Amazon.Lambda.SNSEvents" Version="1.0.0" />
     <PackageReference Include="awssdk.simplenotificationservice" Version="3.3.1.2" />
+    <PackageReference Include="EntityFrameworkCore.Scaffolding.Handlebars" Version="1.5.1" />
     <PackageReference Include="graphql" Version="2.0.0-alpha-938" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.0.3" />
-    <PackageReference Include="pomelo.entityframeworkcore.mysql" Version="2.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.1.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="2.1.1" />
+    <PackageReference Include="pomelo.entityframeworkcore.mysql" Version="2.1.1" />
   </ItemGroup>
 
   <ItemGroup>

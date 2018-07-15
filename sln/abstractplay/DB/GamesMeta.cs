@@ -26,10 +26,10 @@ namespace abstractplay.DB
         public string State { get; set; }
         public string Changelog { get; set; }
 
-        public GamesMetaPublishers Publisher { get; set; }
-        public ICollection<Challenges> Challenges { get; set; }
-        public ICollection<GamesMetaStatus> GamesMetaStatus { get; set; }
-        public ICollection<GamesMetaTags> GamesMetaTags { get; set; }
-        public ICollection<GamesMetaVariants> GamesMetaVariants { get; set; }
+        public virtual GamesMetaPublishers Publisher { get; set; }
+        public virtual ICollection<Challenges> Challenges { get; set; }
+        public virtual ICollection<GamesMetaStatus> GamesMetaStatus { get; set; }
+        public virtual ICollection<GamesMetaTags> GamesMetaTags { get; set; }
+        public virtual ICollection<GamesMetaVariants> GamesMetaVariants { get; set; }
     }
 }

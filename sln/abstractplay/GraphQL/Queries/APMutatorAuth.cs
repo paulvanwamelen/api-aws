@@ -117,7 +117,7 @@ namespace abstractplay.GraphQL
                     LambdaLogger.Log(JsonConvert.SerializeObject(input));
 
                     //Load profile first
-                    Owners rec = db.Owners.Include(x => x.OwnersNames).Single(x => x.CognitoId.Equals(context.cognitoId));
+                    Owners rec = db.Owners.Single(x => x.CognitoId.Equals(context.cognitoId));
                     if (rec == null)
                     {
                         throw new ExecutionError("Could not find your profile. You need to do `createProfile` first.");
@@ -195,7 +195,7 @@ namespace abstractplay.GraphQL
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<NewChallengeDTO>("input");
 
-                    var game = db.GamesMeta.Include(x => x.GamesMetaVariants).Single(x => x.Shortcode.Equals(input.game));
+                    var game = db.GamesMeta.Single(x => x.Shortcode.Equals(input.game));
                     //Validate numPlayers
                     int[] counts = game.PlayerCounts.Split(',').Select(x => int.Parse(x)).ToArray();
                     if (! counts.Contains(input.numPlayers))

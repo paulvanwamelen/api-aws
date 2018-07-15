@@ -7,10 +7,10 @@ namespace abstractplay.DB
     {
         public byte[] StatusId { get; set; }
         public byte[] GameId { get; set; }
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
         public bool IsUp { get; set; }
         public string Message { get; set; }
 
-        public GamesMeta Game { get; set; }
+        public virtual GamesMeta Game { get; set; }
     }
 }

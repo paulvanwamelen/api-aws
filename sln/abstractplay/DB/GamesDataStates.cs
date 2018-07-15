@@ -8,8 +8,8 @@ namespace abstractplay.DB
         public byte[] StateId { get; set; }
         public byte[] GameId { get; set; }
         public string State { get; set; }
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
 
-        public GamesData Game { get; set; }
+        public virtual GamesData Game { get; set; }
     }
 }

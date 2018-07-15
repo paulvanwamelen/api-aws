@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using GraphQL.Types;
+using Microsoft.EntityFrameworkCore;
 
 using abstractplay.DB;
 
@@ -8,7 +9,7 @@ namespace abstractplay.GraphQL
 {
     public class ChallengeType : ObjectGraphType<Challenges>
     {
-        public ChallengeType(): base() 
+        public ChallengeType()
         {
             Field<StringGraphType>("id", description: "This challenge's unique ID", resolve: _ => GuidGenerator.HelperBAToString(((Challenges)_.Source).ChallengeId));
             Field<GamesMetaType>("game", resolve: _ => ((Challenges)_.Source).Game, description:"The game type of this challenge");
@@ -20,7 +21,7 @@ namespace abstractplay.GraphQL
             Field<IntGraphType>("clockInc", description: "The game clock's increment value, in hours", resolve: _ => (int)((Challenges)_.Source).ClockInc);
             Field<IntGraphType>("clockMax", description: "The game clock's maximum value, in hours", resolve: _ => (int)((Challenges)_.Source).ClockMax);
             Field<ListGraphType<StringGraphType>>("variants", description: "List of variants applied to this challenge", resolve: _ => ((Challenges)_.Source).Variants.Split('|'));
-            Field<ListGraphType<UserType>>("players", description:"List of players who have so far accepted the challenge", resolve: _ => ((Challenges)_.Source).ChallengesPlayers.ToArray());
+            Field<ListGraphType<UserType>>("players", description:"List of players who have so far accepted the challenge", resolve: _ => ((Challenges)_.Source).ChallengesPlayers.Select(x => x.Owner).ToArray());
         }
     }
 }

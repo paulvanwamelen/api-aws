@@ -10,7 +10,7 @@ namespace abstractplay.DB
         public byte[] OwnerId { get; set; }
         public string Tag { get; set; }
 
-        public GamesMeta Game { get; set; }
-        public Owners Owner { get; set; }
+        public virtual GamesMeta Game { get; set; }
+        public virtual Owners Owner { get; set; }
     }
 }
