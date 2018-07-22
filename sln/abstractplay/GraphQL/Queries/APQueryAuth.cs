@@ -19,7 +19,7 @@ namespace abstractplay.GraphQL
                 resolve: _ =>
                 {
                     var context = (UserContext)_.UserContext;
-                    return db.Owners.Single(x => x.CognitoId.Equals(context.cognitoId));
+                    return db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
                 }
             );
         }

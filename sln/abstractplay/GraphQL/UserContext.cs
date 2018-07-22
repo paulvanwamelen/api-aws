@@ -14,7 +14,8 @@ namespace abstractplay.GraphQL
             {
                 sub = request.RequestContext.Authorizer.Claims["sub"];
                 cognitoId = new Guid(sub).ToByteArray();
-            } catch (Exception e)
+            } 
+            catch
             {
                 cognitoId = null;
             }

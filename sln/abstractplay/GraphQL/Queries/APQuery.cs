@@ -9,7 +9,7 @@ using abstractplay.DB;
 namespace abstractplay.GraphQL
 {
     /*
-     * This query should contain only data available to unauthenticated users.
+     * This query should only contain data available to unauthenticated users.
      */
     public class APQuery : ObjectGraphType
     {
@@ -22,7 +22,7 @@ namespace abstractplay.GraphQL
                 resolve: _ =>
                 {
                     var id = _.GetArgument<string>("id");
-                    return db.Owners.Single(x => x.OwnerId.Equals(GuidGenerator.HelperStringToBA(id)) && !x.Anonymous);
+                    return db.Owners.SingleOrDefault(x => x.OwnerId.Equals(GuidGenerator.HelperStringToBA(id)) && !x.Anonymous);
                 }
             );
             Field<ListGraphType<UserType>>(
@@ -55,11 +55,11 @@ namespace abstractplay.GraphQL
                     var shortcode = _.GetArgument<string>("shortcode");
                     if (!String.IsNullOrWhiteSpace(id))
                     {
-                        return db.GamesMeta.Single(x => x.GameId.Equals(GuidGenerator.HelperStringToBA(id)));
+                        return db.GamesMeta.SingleOrDefault(x => x.GameId.Equals(GuidGenerator.HelperStringToBA(id)));
 
                     } else if (!String.IsNullOrWhiteSpace(shortcode))
                     {
-                        return db.GamesMeta.Single(x => x.Shortcode.Equals(shortcode));
+                        return db.GamesMeta.SingleOrDefault(x => x.Shortcode.Equals(shortcode));
                     } else 
                     {
                         throw new ExecutionError("You must provide either the game's unique ID or its shortcode.");
@@ -74,7 +74,6 @@ namespace abstractplay.GraphQL
                     return db.GamesMeta.ToArray();
                 }
             );
-
             Field<ChallengeType>(
                 "challenge",
                 description: "A specific challenge",
@@ -82,13 +81,18 @@ namespace abstractplay.GraphQL
                 resolve: _ =>
                 {
                     var id = _.GetArgument<string>("id");
-                    return db.Challenges.Single(x => x.ChallengeId.Equals(GuidGenerator.HelperStringToBA(id)));
+                    return db.Challenges.SingleOrDefault(x => x.ChallengeId.Equals(GuidGenerator.HelperStringToBA(id)));
                 }
             );
             Field<ListGraphType<ChallengeType>>(
                 "challenges",
                 description: "A list of all challenges",
                 resolve: _ => db.Challenges.ToArray()
+            );
+            Field<ListGraphType<GamesDataType>>(
+                "games",
+                description: "All games in progress",
+                resolve: _ => db.GamesData.ToArray()
             );
         }
     }

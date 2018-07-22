@@ -48,6 +48,25 @@ namespace abstractplay
         public string currstate;
     }
 
+    public struct NewGameRequest
+    {
+        public string shortcode;
+        public string url;
+        public string[] players;
+        public string[] variants;
+        public int clockStart;
+        public int clockInc;
+        public int clockMax;
+    }
+
+    public struct NewGameResponse
+    {
+        public string state;
+        public string[] whoseturn;
+        public string[] chat;
+        public string renderrep;
+    }
+
     public struct GameMetadataResponse
     {
         public string state;
@@ -60,7 +79,6 @@ namespace abstractplay
 
     public class DBFunctions
     {
-        private static readonly string GAMES_URL = "https://games.abstractplay.com/";
         //private static readonly HttpClient client = new HttpClient();
         private static MyContext dbc = new MyContext();
 
@@ -88,6 +106,7 @@ namespace abstractplay
                 _.Query = query;
                 _.ExposeExceptions = true;
             }).ConfigureAwait(false);
+
             var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
 
             var response = new APIGatewayProxyResponse
@@ -137,6 +156,7 @@ namespace abstractplay
                 _.UserContext = ucontext;
                 _.ExposeExceptions = true;
             }).ConfigureAwait(false);
+            
             var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
 
             var response = new APIGatewayProxyResponse
@@ -183,6 +203,7 @@ namespace abstractplay
         {
 
         }
+
         public APIGatewayProxyResponse GetSequentialGuid(APIGatewayProxyRequest request, ILambdaContext context)
         {
             string guid = GuidGenerator.HelperBAToString(GuidGenerator.GenerateSequentialGuid());
@@ -197,56 +218,68 @@ namespace abstractplay
             return response;
         }        
 
+        public static async Task<string> SendSns(string arn, string payload)
+        {
+            var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
+            var snsreq = new PublishRequest(arn, payload);
+            await snsclient.PublishAsync(snsreq).ConfigureAwait(false);
+            return null;
+        }
+
+        private async Task<string> UpdateGameStatus(string shortcode, bool isUp, string msg)
+        {
+            GameStatusDTO payload = new GameStatusDTO
+            {
+                shortcode = shortcode,
+                isUp = isUp,
+                message = msg
+            };
+
+            var mutreq = new MutateRequest {
+                query = "mutation ($data: GameStatusInput!){ updateGameStatus (input: $data) {id}}",
+                variables = new Dictionary<string, object>
+                {
+                    {"data", payload}
+                }
+            };
+            string query = JsonConvert.SerializeObject(mutreq);
+            string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
+            await SendSns(snsarn, query).ConfigureAwait(false);
+            return null;
+        }
+
         public async Task<string> Pinger(SNSEvent snsevent, ILambdaContext context)
         {
             foreach (var rec in snsevent.Records)
             {
                 PingRequest req = JsonConvert.DeserializeObject<PingRequest>(rec.Sns.Message);
-                LambdaLogger.Log("Received the following ping request:\n"+rec.Sns.Message);
+                // LambdaLogger.Log("Received the following ping request:\n"+rec.Sns.Message);
+                if (String.IsNullOrWhiteSpace(req.url))
+                {
+                    req.url = "https://" + System.Environment.GetEnvironmentVariable("url_games") + "/" + req.shortcode;
+                }
                 var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
 
                 //check state first
                 bool needMeta = true;
                 if (!String.IsNullOrWhiteSpace(req.currstate))
                 {
-                    LambdaLogger.Log("Fetching state at " + req.url);
+                    // LambdaLogger.Log("Fetching state at " + req.url);
                     using (HttpClient client = new HttpClient())
                     using (var postbody = new StringContent("{\"mode\": \"ping\"}"))
                     using (HttpResponseMessage response = await client.PostAsync(req.url, postbody))
                     using (HttpContent content = response.Content)
                     {
                         //Check header and send status update
-                        GameStatusDTO payload;
                         if (response.StatusCode == HttpStatusCode.OK)
                         {
-                            payload = new GameStatusDTO {
-                                shortcode = req.shortcode,
-                                isUp = true,
-                                message = "Action: Ping"
-                            };
+                            await UpdateGameStatus(req.shortcode, true, "Action: Ping").ConfigureAwait(false);
                         } else 
                         {
-                            payload = new GameStatusDTO {
-                                shortcode = req.shortcode,
-                                isUp = false,
-                                message = "Action: Ping, Status Code: " + response.StatusCode.ToString()
-                            };
+                            await UpdateGameStatus(req.shortcode, false, "Action: Ping, Status Code: " + response.StatusCode.ToString()).ConfigureAwait(false);
                             //Don't let the logic continue after the status update
                             needMeta = false;
                         }
-
-                        var mutreq = new MutateRequest {
-                            query = "mutation ($data: GameStatusInput!){ updateGameStatus (input: $data) {id}}",
-                            variables = new Dictionary<string, object>
-                            {
-                                {"data", payload}
-                            }
-                        };
-                        string query = JsonConvert.SerializeObject(mutreq);
-                        string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
-                        LambdaLogger.Log("The following query is being sent to SNS arn "+ snsarn +":\n" + query);
-                        var snsreq = new PublishRequest(snsarn, query);
-                        await snsclient.PublishAsync(snsreq).ConfigureAwait(false);
 
                         if (needMeta)
                         {
@@ -269,7 +302,7 @@ namespace abstractplay
                     object vars;
                     if (req.type == RemoteTypes.GAME)
                     {
-                        LambdaLogger.Log("Fetching full metadata.");
+                        // LambdaLogger.Log("Fetching full metadata.");
                         using (HttpClient client = new HttpClient())
                         using (var postbody = new StringContent("{\"mode\": \"metadata\"}"))
                         using (HttpResponseMessage response = await client.PostAsync(req.url, postbody))
@@ -277,7 +310,7 @@ namespace abstractplay
                         {
                             // ... Read the string.
                             string result = await content.ReadAsStringAsync();
-                            LambdaLogger.Log("Received the following metadata:\n"+result);
+                            // LambdaLogger.Log("Received the following metadata:\n"+result);
                             GameMetadataResponse input = JsonConvert.DeserializeObject<GameMetadataResponse>(result);
 
                             vars = new GameMetadataDTO() {
@@ -307,9 +340,73 @@ namespace abstractplay
                     };
                     string query = JsonConvert.SerializeObject(mutreq);
                     string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
-                    LambdaLogger.Log("The following query is being sent to SNS arn "+ snsarn +":\n" + query);
+                    // LambdaLogger.Log("The following query is being sent to SNS arn "+ snsarn +":\n" + query);
                     var snsreq = new PublishRequest(snsarn, query);
                     await snsclient.PublishAsync(snsreq).ConfigureAwait(false);
+                }
+            }
+            return null;
+        }
+
+        public async Task<string> GameMaker(SNSEvent snsevent, ILambdaContext context)
+        {
+            foreach (var rec in snsevent.Records)
+            {
+                NewGameRequest req = JsonConvert.DeserializeObject<NewGameRequest>(rec.Sns.Message);
+                LambdaLogger.Log("Received the following new game request:\n"+rec.Sns.Message);
+                if (String.IsNullOrWhiteSpace(req.url))
+                {
+                    req.url = "https://" + System.Environment.GetEnvironmentVariable("url_games") + "/" + req.shortcode;
+                }
+                var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
+
+                string gamePayload = JsonConvert.SerializeObject(new {mode = "init", players = req.players, variants = req.variants});
+
+                using (HttpClient client = new HttpClient())
+                using (var postbody = new StringContent(gamePayload))
+                using (HttpResponseMessage response = await client.PostAsync(req.url, postbody))
+                using (HttpContent content = response.Content)
+                {
+                    //Check header and send status update
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        await UpdateGameStatus(req.shortcode, true, "Action: New Game").ConfigureAwait(false);
+                    } else 
+                    {
+                        await UpdateGameStatus(req.shortcode, false, "Action: New Game, Status Code: " + response.StatusCode.ToString()).ConfigureAwait(false);
+                        return null;
+                    }
+
+                    //Now create the game
+                    string result = await content.ReadAsStringAsync();
+                    LambdaLogger.Log("Received the following from the game server:\n"+result);
+                    NewGameResponse input = JsonConvert.DeserializeObject<NewGameResponse>(result);
+
+                    var vars = new NewGameInputDTO {
+                        shortcode = req.shortcode,
+                        variants = req.variants,
+                        players = req.players,
+                        whoseturn = input.whoseturn,
+                        state = input.state,
+                        renderrep = input.renderrep,
+                        clockStart = (ushort)req.clockStart,
+                        clockInc = (ushort)req.clockInc,
+                        clockMax = (ushort)req.clockMax
+                    };
+                    var graphquery = "mutation ($data: NewGameInput!){ createGame(input: $data) {id}}";
+
+                    var mutreq = new MutateRequest
+                    {
+                        query = graphquery,
+                        variables = new Dictionary<string, object>
+                        {
+                            {"data", vars}
+                        }
+                    };
+                    string query = JsonConvert.SerializeObject(mutreq);
+                    string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
+                    LambdaLogger.Log("The following query is being sent to SNS arn "+ snsarn +":\n" + query);
+                    await SendSns(snsarn, query).ConfigureAwait(false);
                 }
             }
             return null;

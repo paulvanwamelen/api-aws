@@ -20,6 +20,7 @@ XX XXX XXXX:
 * Game status now updates during pings.
 * You can now issue challenges!
 * Upgraded to efcore2.1 and got lazy loading working!! And got a lot of other code cleaned up in the process.
+* Game data types are now up and running. Still working out the game creation mutations.
 
 10 Jun 2018:
 

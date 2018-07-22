@@ -6,10 +6,10 @@ namespace abstractplay.DB
     public partial class GamesDataClocks
     {
         public byte[] GameId { get; set; }
-        public byte[] PlayerId { get; set; }
-        public int Current { get; set; }
-        public int Increment { get; set; }
-        public int Maximum { get; set; }
-        public bool Frozen { get; set; }
+        public byte[] OwnerId { get; set; }
+        public short Bank { get; set; }
+
+        public virtual GamesData Game { get; set; }
+        public virtual Owners Owner { get; set; }
     }
 }

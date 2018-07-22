@@ -108,6 +108,48 @@ namespace abstractplay.GraphQL
                     }
                 }
             );
+            Field<ListGraphType<GamesDataClockType>>(
+                "banks",
+                description: "The clock banks associated with this user",
+                resolve: _ =>
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.GamesDataClocks.ToArray();
+                    }
+                }
+            );
+            Field<ListGraphType<GamesDataType>>(
+                "games",
+                description: "The games this user is currently playing",
+                resolve: _ =>
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.GamesDataPlayers.Select(x => (GamesData)x.Game).ToArray();
+                    }
+                }
+            );
+            Field<ListGraphType<GamesDataType>>(
+                "theirTurn",
+                description: "The games in which this player can currently move",
+                resolve: _ =>
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.GamesDataWhoseturn.Select(x => (GamesData)x.Game).ToArray();
+                    }
+                }
+            );
         }
     }
 }

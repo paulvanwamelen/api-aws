@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
@@ -117,7 +118,7 @@ namespace abstractplay.GraphQL
                     LambdaLogger.Log(JsonConvert.SerializeObject(input));
 
                     //Load profile first
-                    Owners rec = db.Owners.Single(x => x.CognitoId.Equals(context.cognitoId));
+                    Owners rec = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
                     if (rec == null)
                     {
                         throw new ExecutionError("Could not find your profile. You need to do `createProfile` first.");
@@ -195,7 +196,11 @@ namespace abstractplay.GraphQL
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<NewChallengeDTO>("input");
 
-                    var game = db.GamesMeta.Single(x => x.Shortcode.Equals(input.game));
+                    var game = db.GamesMeta.SingleOrDefault(x => x.Shortcode.Equals(input.game));
+                    if (game == null)
+                    {
+                        throw new ExecutionError("Could not find a game with the name "+input.game+".");
+                    }
                     //Validate numPlayers
                     int[] counts = game.PlayerCounts.Split(',').Select(x => int.Parse(x)).ToArray();
                     if (! counts.Contains(input.numPlayers))
@@ -236,7 +241,11 @@ namespace abstractplay.GraphQL
                     }
 
                     //Build record
-                    var user = db.Owners.Single(x => x.CognitoId.Equals(context.cognitoId));
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    if (user == null)
+                    {
+                        throw new ExecutionError("You do not appear to have a user profile. You must create a profile before playing.");
+                    }
                     byte[] challengeId = GuidGenerator.GenerateSequentialGuid();
                     var rec = new Challenges {
                         ChallengeId = challengeId,
@@ -294,7 +303,135 @@ namespace abstractplay.GraphQL
                     return rec;
                 }
             );
+            FieldAsync<ChallengeType>(
+                "respondChallenge",
+                description: "Confirm or withdraw from a pending challenge",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<RespondChallengeInputType>> {Name = "input"}
+                ),
+                resolve: async _ => {
+                    var context = (UserContext)_.UserContext;
+                    var input = _.GetArgument<RespondChallengeDTO>("input");
 
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    if (user == null)
+                    {
+                        throw new ExecutionError("You don't appear to have a user account! You must create a profile before you can play.");
+                    }
+                    var challenge = db.Challenges.SingleOrDefault(x => x.ChallengeId.Equals(GuidGenerator.HelperStringToBA(input.id)));
+                    if (challenge == null)
+                    {
+                        throw new ExecutionError("The challenge '"+input.id+"' does not appear to exist.");
+                    }
+
+                    var player = db.ChallengesPlayers.SingleOrDefault(x => x.OwnerId.Equals(user.OwnerId));
+                    //if confirming
+                    if (input.confirmed)
+                    {
+                        //They were directly invited and so are already in the database
+                        if (player != null)
+                        {
+                            player.Confirmed = true;
+                            db.ChallengesPlayers.Update(player);
+                        }
+                        //otherwise, add them
+                        else
+                        {
+                            var node = new ChallengesPlayers
+                            {
+                                EntryId = GuidGenerator.GenerateSequentialGuid(),
+                                ChallengeId = GuidGenerator.HelperStringToBA(input.id),
+                                OwnerId = user.OwnerId,
+                                Confirmed = true,
+                                Seat = null
+                            };
+                            db.ChallengesPlayers.Add(node);
+                        }
+
+                        //Check for full challenge and create game if necessary
+                        if (challenge.ChallengesPlayers.Where(x => x.Confirmed).Count() == challenge.NumPlayers)
+                        {
+                            //Send a "new game" request via SNS
+                            var req = new NewGameRequest
+                            {
+                                shortcode = challenge.Game.Shortcode,
+                                url = challenge.Game.Url,
+                                clockStart = challenge.ClockStart,
+                                clockInc = challenge.ClockInc,
+                                clockMax = challenge.ClockMax
+                            };
+                            //variants
+                            if (String.IsNullOrWhiteSpace(challenge.Variants))
+                            {
+                                req.variants = null;
+                            }
+                            else
+                            {
+                                req.variants = challenge.Variants.Split('|');
+                            }
+                            //players
+                            if (challenge.NumPlayers == 2)
+                            {
+                                var plist = new List<string>();
+                                var parray = challenge.ChallengesPlayers.ToArray();
+                                //just brute force it for now
+                                //only one of the players will have a defined seat
+                                if ( (parray[0].Seat == 1) || (parray[1].Seat == 2) )
+                                {
+                                    plist.Add(GuidGenerator.HelperBAToString(parray[0].Owner.PlayerId));
+                                    plist.Add(GuidGenerator.HelperBAToString(parray[1].Owner.PlayerId));
+                                }
+                                else if ( (parray[0].Seat == 2) || (parray[1].Seat == 1) )
+                                {
+                                    plist.Add(GuidGenerator.HelperBAToString(parray[1].Owner.PlayerId));
+                                    plist.Add(GuidGenerator.HelperBAToString(parray[0].Owner.PlayerId));
+                                }
+                                else
+                                {
+                                    foreach (var o in challenge.ChallengesPlayers.Select(x => (Owners)x.Owner))
+                                    {
+                                        plist.Add(GuidGenerator.HelperBAToString(o.PlayerId));
+                                    }
+                                    plist.Shuffle();
+                                }
+                                req.players = plist.ToArray();
+                            }
+                            else
+                            {
+                                var plist = new List<string>();
+                                foreach (var o in challenge.ChallengesPlayers.Select(x => (Owners)x.Owner))
+                                {
+                                    plist.Add(GuidGenerator.HelperBAToString(o.PlayerId));
+                                }
+                                plist.Shuffle();
+                                req.players = plist.ToArray();
+                            }
+                            string payload = JsonConvert.SerializeObject(req);
+                            string snsarn = System.Environment.GetEnvironmentVariable("sns_maker");
+                            await Functions.SendSns(snsarn, payload).ConfigureAwait(false);
+
+                            //Delete the challenge
+                            db.Challenges.Remove(challenge);
+                        }
+                    }
+                    //if withdrawing and the player entry already exists
+                    else if (player != null)
+                    {
+                        //Is it the challenge issuer who's withdrawing?
+                        if (player.OwnerId == challenge.OwnerId)
+                        {
+                            db.Challenges.Remove(challenge);
+                        }
+                        //Or someone else?
+                        else
+                        {
+                            db.ChallengesPlayers.Remove(player);
+                        }
+                    }
+                    db.SaveChanges();
+                    return challenge;
+                }
+            );
         }
     }
 }

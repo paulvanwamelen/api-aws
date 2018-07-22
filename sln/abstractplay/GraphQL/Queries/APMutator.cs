@@ -72,6 +72,93 @@ namespace abstractplay.GraphQL
                     return status;
                 }
             );
+            Field<GamesDataType>(
+                "createGame",
+                description: "Create a new game",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<NewGameInputType>> {Name = "input"}
+                ),
+                resolve: _ => {
+                    var context = (UserContext)_.UserContext;
+                    var input = _.GetArgument<NewGameInputDTO>("input");
+
+                    byte[] newgameid = GuidGenerator.GenerateSequentialGuid();
+                    var game = new GamesData
+                    {
+                        EntryId = newgameid,
+                        GameMetaId = db.GamesMeta.Single(x => x.Shortcode.Equals(input.shortcode)).GameId,
+                        Closed = false,
+                        Alert = false,
+                        ClockFrozen = false,
+                        ClockStart = input.clockStart,
+                        ClockInc = input.clockInc,
+                        ClockMax = input.clockMax
+                    };
+                    //variants
+                    if (input.variants.Length > 0)
+                    {
+                        game.Variants = String.Join('|', input.variants);
+                    }
+                    //chat
+                    if (! String.IsNullOrWhiteSpace(input.chat))
+                    {
+                        var chat = new GamesDataChats
+                        {
+                            ChatId = GuidGenerator.GenerateSequentialGuid(),
+                            GameId = newgameid,
+                            Message = input.chat
+                        };
+                        game.GamesDataChats.Add(chat);
+                    }
+                    //players
+                    foreach (var player in input.players)
+                    {
+                        var owner = db.Owners.Single(x => x.PlayerId.Equals(GuidGenerator.HelperStringToBA(player)));
+                        var rec = new GamesDataPlayers
+                        {
+                            GameId = newgameid,
+                            Owner = owner
+                        };
+                        game.GamesDataPlayers.Add(rec);
+                    }
+                    //whoseturn
+                    foreach (var player in input.players)
+                    {
+                        var owner = db.Owners.Single(x => x.PlayerId.Equals(GuidGenerator.HelperStringToBA(player)));
+                        var rec = new GamesDataWhoseturn
+                        {
+                            GameId = newgameid,
+                            Owner = owner
+                        };
+                        game.GamesDataWhoseturn.Add(rec);
+                    }
+                    //clocks
+                    foreach (var player in input.players)
+                    {
+                        var owner = db.Owners.Single(x => x.PlayerId.Equals(GuidGenerator.HelperStringToBA(player)));
+                        var rec = new GamesDataClocks
+                        {
+                            GameId = newgameid,
+                            Owner = owner,
+                            Bank = (short)input.clockStart
+                        };
+                        game.GamesDataClocks.Add(rec);
+                    }
+                    //state
+                    var state = new GamesDataStates
+                    {
+                        StateId = GuidGenerator.GenerateSequentialGuid(),
+                        GameId = newgameid,
+                        State = input.state,
+                        RenderRep = input.renderrep
+                    };
+                    game.GamesDataStates.Add(state);
+
+                    db.GamesData.Add(game);
+                    db.SaveChanges();
+                    return game;
+                }
+            );
         }
     }
 }

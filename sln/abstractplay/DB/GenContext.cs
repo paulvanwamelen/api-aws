@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace abstractplay.DB
 {
-    public partial class MyContext : DbContext
+    public partial class GenContext : DbContext
     {
         public virtual DbSet<Announcements> Announcements { get; set; }
         public virtual DbSet<Challenges> Challenges { get; set; }
@@ -142,8 +142,14 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Alert)
                     .HasName("idx_alert");
 
+                entity.HasIndex(e => e.ClockFrozen)
+                    .HasName("idx_frozen");
+
                 entity.HasIndex(e => e.Closed)
                     .HasName("idx_closed");
+
+                entity.HasIndex(e => e.GameMetaId)
+                    .HasName("idx_gameid");
 
                 entity.HasIndex(e => e.Variants)
                     .HasName("idx_variants");
@@ -152,13 +158,21 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.Alert).HasColumnType("bit(1)");
 
+                entity.Property(e => e.ClockFrozen).HasColumnType("bit(1)");
+
                 entity.Property(e => e.Closed).HasColumnType("bit(1)");
 
-                entity.Property(e => e.GameId)
+                entity.Property(e => e.GameMetaId)
                     .IsRequired()
                     .HasMaxLength(16);
 
                 entity.Property(e => e.Variants).HasColumnType("text");
+
+                entity.HasOne(d => d.GameMeta)
+                    .WithMany(p => p.GamesData)
+                    .HasForeignKey(d => d.GameMetaId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_data2meta");
             });
 
             modelBuilder.Entity<GamesDataChats>(entity =>
@@ -173,7 +187,7 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.Message)
                     .HasName("idx_msg");
 
-                entity.HasIndex(e => e.PlayerId)
+                entity.HasIndex(e => e.OwnerId)
                     .HasName("fk_chat2player");
 
                 entity.HasIndex(e => e.Timestamp)
@@ -191,9 +205,7 @@ namespace abstractplay.DB
                     .IsRequired()
                     .HasColumnType("text");
 
-                entity.Property(e => e.PlayerId)
-                    .IsRequired()
-                    .HasMaxLength(16);
+                entity.Property(e => e.OwnerId).HasMaxLength(16);
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnType("timestamp")
@@ -205,61 +217,71 @@ namespace abstractplay.DB
                     .HasForeignKey(d => d.GameId)
                     .HasConstraintName("fk_chat2game");
 
-                entity.HasOne(d => d.Player)
+                entity.HasOne(d => d.Owner)
                     .WithMany(p => p.GamesDataChats)
-                    .HasPrincipalKey(p => p.PlayerId)
-                    .HasForeignKey(d => d.PlayerId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("fk_chat2player");
+                    .HasForeignKey(d => d.OwnerId)
+                    .HasConstraintName("fk_chat2owner");
             });
 
             modelBuilder.Entity<GamesDataClocks>(entity =>
             {
-                entity.HasKey(e => new { e.GameId, e.PlayerId });
+                entity.HasKey(e => new { e.GameId, e.OwnerId });
 
                 entity.ToTable("games_data_clocks");
 
+                entity.HasIndex(e => e.Bank)
+                    .HasName("idx_bank");
+
+                entity.HasIndex(e => e.GameId)
+                    .HasName("idx_game");
+
+                entity.HasIndex(e => e.OwnerId)
+                    .HasName("idx_owner");
+
                 entity.Property(e => e.GameId).HasMaxLength(16);
 
-                entity.Property(e => e.PlayerId).HasMaxLength(16);
+                entity.Property(e => e.OwnerId).HasMaxLength(16);
 
-                entity.Property(e => e.Current).HasColumnType("int(11)");
+                entity.Property(e => e.Bank).HasColumnType("smallint(5)");
 
-                entity.Property(e => e.Frozen).HasColumnType("bit(1)");
+                entity.HasOne(d => d.Game)
+                    .WithMany(p => p.GamesDataClocks)
+                    .HasForeignKey(d => d.GameId)
+                    .HasConstraintName("fk_bank2game");
 
-                entity.Property(e => e.Increment).HasColumnType("int(11)");
-
-                entity.Property(e => e.Maximum).HasColumnType("int(11)");
+                entity.HasOne(d => d.Owner)
+                    .WithMany(p => p.GamesDataClocks)
+                    .HasForeignKey(d => d.OwnerId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_bank2owner");
             });
 
             modelBuilder.Entity<GamesDataPlayers>(entity =>
             {
-                entity.HasKey(e => new { e.GameId, e.PlayerId });
+                entity.HasKey(e => new { e.GameId, e.OwnerId });
 
                 entity.ToTable("games_data_players");
 
-                entity.HasIndex(e => e.PlayerId)
-                    .HasName("fk_player2player");
+                entity.HasIndex(e => e.GameId)
+                    .HasName("idx_gameid");
 
-                entity.HasIndex(e => e.Seat)
-                    .HasName("idx_seat");
+                entity.HasIndex(e => e.OwnerId)
+                    .HasName("fk_player2player");
 
                 entity.Property(e => e.GameId).HasMaxLength(16);
 
-                entity.Property(e => e.PlayerId).HasMaxLength(16);
-
-                entity.Property(e => e.Seat).HasColumnType("int(11)");
+                entity.Property(e => e.OwnerId).HasMaxLength(16);
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.GamesDataPlayers)
                     .HasForeignKey(d => d.GameId)
                     .HasConstraintName("fk_player2game");
 
-                entity.HasOne(d => d.Player)
+                entity.HasOne(d => d.Owner)
                     .WithMany(p => p.GamesDataPlayers)
-                    .HasPrincipalKey(p => p.PlayerId)
-                    .HasForeignKey(d => d.PlayerId)
-                    .HasConstraintName("fk_player2player");
+                    .HasForeignKey(d => d.OwnerId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_player2owner");
             });
 
             modelBuilder.Entity<GamesDataStates>(entity =>
@@ -280,6 +302,10 @@ namespace abstractplay.DB
                     .IsRequired()
                     .HasMaxLength(16);
 
+                entity.Property(e => e.RenderRep)
+                    .IsRequired()
+                    .HasColumnType("mediumtext");
+
                 entity.Property(e => e.State)
                     .IsRequired()
                     .HasColumnType("mediumtext");
@@ -297,28 +323,30 @@ namespace abstractplay.DB
 
             modelBuilder.Entity<GamesDataWhoseturn>(entity =>
             {
-                entity.HasKey(e => new { e.GameId, e.PlayerId });
+                entity.HasKey(e => new { e.GameId, e.OwnerId });
 
                 entity.ToTable("games_data_whoseturn");
 
-                entity.HasIndex(e => e.PlayerId)
+                entity.HasIndex(e => e.GameId)
+                    .HasName("idx_gameid");
+
+                entity.HasIndex(e => e.OwnerId)
                     .HasName("fk_turn2player");
 
                 entity.Property(e => e.GameId).HasMaxLength(16);
 
-                entity.Property(e => e.PlayerId).HasMaxLength(16);
+                entity.Property(e => e.OwnerId).HasMaxLength(16);
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.GamesDataWhoseturn)
                     .HasForeignKey(d => d.GameId)
                     .HasConstraintName("fk_turn2game");
 
-                entity.HasOne(d => d.Player)
+                entity.HasOne(d => d.Owner)
                     .WithMany(p => p.GamesDataWhoseturn)
-                    .HasPrincipalKey(p => p.PlayerId)
-                    .HasForeignKey(d => d.PlayerId)
+                    .HasForeignKey(d => d.OwnerId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("fk_turn2player");
+                    .HasConstraintName("fk_turn2owner");
             });
 
             modelBuilder.Entity<GamesMeta>(entity =>
@@ -627,17 +655,6 @@ namespace abstractplay.DB
                     .HasForeignKey(d => d.OwnerId)
                     .HasConstraintName("fk_name2owner");
             });
-            var dateTimeConverter = new ValueConverter<DateTime, DateTime>(
-                v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
-
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-            {
-                foreach (var property in entityType.GetProperties())
-                {
-                    if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
-                        property.SetValueConverter(dateTimeConverter);
-                }
-            }
         }
     }
 }

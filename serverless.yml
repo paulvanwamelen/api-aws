@@ -6,7 +6,6 @@ plugins:
   - serverless-reqvalidator-plugin
   - serverless-domain-manager
   - serverless-pseudo-parameters
-  - serverless-plugin-scripts
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -21,6 +20,9 @@ provider:
   environment:
     sns_mutator: ${self:custom.snsMutatorArn}
     sns_pinger: ${self:custom.snsPingerArn}
+    sns_maker: ${self:custom.snsMakerArn}
+    sns_mover: ${self:custom.snsMoverArn}
+    url_games: ${file(../apsecrets.yml):domains.games.${self:custom.stage}.domain}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -28,6 +30,8 @@ provider:
       Resource: 
         - ${self:custom.snsMutatorArn}
         - ${self:custom.snsPingerArn}
+        - ${self:custom.snsMakerArn}
+        - ${self:custom.snsMoverArn}
 
   stage: dev
   region: us-east-2
@@ -138,6 +142,16 @@ functions:
     events:
       - sns: ${self:custom.snsPingerTopic}
 
+  GameMaker:
+    handler: abstractplay::abstractplay.Functions::GameMaker
+    events:
+      - sns: ${self:custom.snsMakerTopic}
+
+  # GameMover:
+  #   handler: abstractplay::abstractplay.Functions::GameMover
+  #   events:
+  #     - sns: ${self:custom.snsMoverTopic}
+
   GetGuid:
     handler: abstractplay::abstractplay.Functions::GetSequentialGuid
     events:
@@ -174,10 +188,14 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   stageConfig: ${file(../apsecrets.yml):domains.api.${self:custom.stage}}
   region: ${opt:region, self:provider.region}
-  snsPingerTopic: "${self:service}-pinger-${self:custom.stage}"
-  snsPingerArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsPingerTopic}" ] ]  }
   snsMutatorTopic: "${self:service}-mutator-${self:custom.stage}"
   snsMutatorArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsMutatorTopic}" ] ]  }
+  snsPingerTopic: "${self:service}-pinger-${self:custom.stage}"
+  snsPingerArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsPingerTopic}" ] ]  }
+  snsMakerTopic: "${self:service}-maker-${self:custom.stage}"
+  snsMakerArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsMakerTopic}" ] ]  }
+  snsMoverTopic: "${self:service}-maker-${self:custom.stage}"
+  snsMoverArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsMoverTopic}" ] ]  }
   dotnet:
     slndir: sln/abstractplay
   customDomain:

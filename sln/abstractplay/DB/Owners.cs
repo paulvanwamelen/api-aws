@@ -10,6 +10,7 @@ namespace abstractplay.DB
             Challenges = new HashSet<Challenges>();
             ChallengesPlayers = new HashSet<ChallengesPlayers>();
             GamesDataChats = new HashSet<GamesDataChats>();
+            GamesDataClocks = new HashSet<GamesDataClocks>();
             GamesDataPlayers = new HashSet<GamesDataPlayers>();
             GamesDataWhoseturn = new HashSet<GamesDataWhoseturn>();
             GamesMetaTags = new HashSet<GamesMetaTags>();
@@ -28,6 +29,7 @@ namespace abstractplay.DB
         public virtual ICollection<Challenges> Challenges { get; set; }
         public virtual ICollection<ChallengesPlayers> ChallengesPlayers { get; set; }
         public virtual ICollection<GamesDataChats> GamesDataChats { get; set; }
+        public virtual ICollection<GamesDataClocks> GamesDataClocks { get; set; }
         public virtual ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
         public virtual ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
         public virtual ICollection<GamesMetaTags> GamesMetaTags { get; set; }
