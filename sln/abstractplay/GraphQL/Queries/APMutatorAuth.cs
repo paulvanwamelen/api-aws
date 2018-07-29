@@ -234,7 +234,7 @@ namespace abstractplay.GraphQL
                     //Validate any challengees (including seat)
                     foreach (var player in input.challengees)
                     {
-                        if (! db.Owners.Any(x => x.PlayerId.Equals(player)))
+                        if (! db.Owners.Any(x => x.OwnerId.Equals(GuidGenerator.HelperStringToBA(player))))
                         {
                             throw new ExecutionError("Could not find player ID "+player+".");
                         }
@@ -318,16 +318,43 @@ namespace abstractplay.GraphQL
                     {
                         throw new ExecutionError("You don't appear to have a user account! You must create a profile before you can play.");
                     }
-                    var challenge = db.Challenges.SingleOrDefault(x => x.ChallengeId.Equals(GuidGenerator.HelperStringToBA(input.id)));
+
+                    byte[] binaryid;
+                    try
+                    {
+                        binaryid = GuidGenerator.HelperStringToBA(input.id);
+                    }
+                    catch
+                    {
+                        throw new ExecutionError("The challenge ID you provided is malformed. Please verify and try again.");
+                    }
+
+                    var challenge = db.Challenges.Include(x => x.ChallengesPlayers).SingleOrDefault(x => x.ChallengeId.Equals(binaryid));
                     if (challenge == null)
                     {
                         throw new ExecutionError("The challenge '"+input.id+"' does not appear to exist.");
                     }
+                    LambdaLogger.Log("Found the following challenge:\nID: "+GuidGenerator.HelperBAToString(challenge.ChallengeId)+"\nGame: "+challenge.Game.Shortcode+"\nOwner: "+GuidGenerator.HelperBAToString(challenge.OwnerId) + "\nThis challenge has the following participants so far:\n");
+                    foreach (var p in challenge.ChallengesPlayers)
+                    {
+                        LambdaLogger.Log("\t" + GuidGenerator.HelperBAToString(p.OwnerId));
+                    }
+                    
 
-                    var player = db.ChallengesPlayers.SingleOrDefault(x => x.OwnerId.Equals(user.OwnerId));
+                    var player = db.ChallengesPlayers.SingleOrDefault(x => x.ChallengeId.Equals(challenge.ChallengeId) && x.OwnerId.Equals(user.OwnerId));
+                    //challenge.ChallengesPlayers.SingleOrDefault(x => x.OwnerId.Equals(user.OwnerId));
+                    if (player == null)
+                    {
+                        LambdaLogger.Log("The person submitting this request ("+ GuidGenerator.HelperBAToString(user.OwnerId) +") is *not* already a part of the challenge");
+                    }
+                    else
+                    {
+                        LambdaLogger.Log("The person submitting this request ("+ GuidGenerator.HelperBAToString(user.OwnerId) +") *is* already confirmed.");
+                    }
                     //if confirming
                     if (input.confirmed)
                     {
+                        LambdaLogger.Log("Confirmed was true");
                         //They were directly invited and so are already in the database
                         if (player != null)
                         {
@@ -417,16 +444,25 @@ namespace abstractplay.GraphQL
                     //if withdrawing and the player entry already exists
                     else if (player != null)
                     {
+                        LambdaLogger.Log("Confirmed is false and player is not null");
+                        LambdaLogger.Log("Player ID: "+ GuidGenerator.HelperBAToString(player.OwnerId) +", Owner ID: "+ GuidGenerator.HelperBAToString(challenge.OwnerId));
+                        LambdaLogger.Log((player.OwnerId.SequenceEqual(challenge.OwnerId)).ToString());
                         //Is it the challenge issuer who's withdrawing?
-                        if (player.OwnerId == challenge.OwnerId)
+                        if (player.OwnerId.SequenceEqual(challenge.OwnerId))
                         {
+                            LambdaLogger.Log("The owner is withdrawing, so deleting the entire challenge.");
                             db.Challenges.Remove(challenge);
                         }
                         //Or someone else?
                         else
                         {
+                            LambdaLogger.Log("Just removing the player entry");
                             db.ChallengesPlayers.Remove(player);
                         }
+                    }
+                    else
+                    {
+                        LambdaLogger.Log("Confirmed was false, but the player wasn't already involved in the game ("+user.Country+")");
                     }
                     db.SaveChanges();
                     return challenge;

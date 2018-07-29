@@ -110,6 +110,10 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.OwnerId)
                     .HasName("idx_ownerid");
 
+                entity.HasIndex(e => new { e.ChallengeId, e.OwnerId })
+                    .HasName("idx_uniqueplayers")
+                    .IsUnique();
+
                 entity.Property(e => e.EntryId).HasMaxLength(16);
 
                 entity.Property(e => e.ChallengeId)

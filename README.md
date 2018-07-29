@@ -8,19 +8,14 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 ## Change log
 
-XX XXX XXXX:
+29 Jul 2018:
 
-* Only the GraphQL endpoints are now behind the VPC, reducing latency for all the others. But it means that most database writes will be asynchronous.
-* The query and mutator endpoints are fully functioning now.
-* API Gateway doesn't support optional authorization. The headers are either required or not even processed. So for now I'm creating a separate endpoint for authenticated queries, thus allowing "me"-style types.
-* Continuing to expand the data available through GraphQL.
-* Mutations are working!!
-* Refactored GraphQL code.
-* Games can now be pinged and metadata updated.
-* Game status now updates during pings.
-* You can now issue challenges!
-* Upgraded to efcore2.1 and got lazy loading working!! And got a lot of other code cleaned up in the process.
-* Game data types are now up and running. Still working out the game creation mutations.
+* Moved to a [GraphQL](https://graphql.org/) structure. This provides many benefits, including reduced latency and network transfer volume.
+* There is a public endpoint and an authenticated endpoint.
+* Many types are now exposed, including user data, games data and metadata, and challenges.
+* Slowly adding the mutators. (You can now create and edit profiles and issue challenges.)
+* There are also some backend functions now working, too (e.g., game pinging and status updates).
+* Currently blocked on known issue with latest version of Entity Framework Core ([issue #12749](https://github.com/aspnet/EntityFrameworkCore/issues/12749)). Will have to continue with other work until it gets resolved or I find a workaround.
 
 10 Jun 2018:
 
