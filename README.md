@@ -8,6 +8,11 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 ## Change log
 
+XX Aug 2018:
+
+* Upgraded to NetCore 2.1 and language version 7.1.
+* Found a workaround for EFCore issue!!
+
 29 Jul 2018:
 
 * Moved to a [GraphQL](https://graphql.org/) structure. This provides many benefits, including reduced latency and network transfer volume.

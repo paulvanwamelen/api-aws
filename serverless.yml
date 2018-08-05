@@ -13,11 +13,12 @@ plugins:
 
 provider:
   name: aws
-  runtime: dotnetcore2.0
+  runtime: dotnetcore2.1
   memorySize: 256
   timeout: 30
   versionFunctions: false
   environment:
+    COMPlus_TieredCompilation : 1
     sns_mutator: ${self:custom.snsMutatorArn}
     sns_pinger: ${self:custom.snsPingerArn}
     sns_maker: ${self:custom.snsMakerArn}
