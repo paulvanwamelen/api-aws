@@ -14,7 +14,7 @@ plugins:
 provider:
   name: aws
   runtime: dotnetcore2.1
-  memorySize: 256
+  memorySize: 512
   timeout: 30
   versionFunctions: false
   environment:

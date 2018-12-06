@@ -15,7 +15,7 @@ namespace abstractplay.GraphQL
             Field<NonNullGraphType<ListGraphType<StringGraphType>>>("whoseturn");
             Field<NonNullGraphType<StringGraphType>>("state");
             Field<NonNullGraphType<StringGraphType>>("renderrep");
-            Field<NonNullGraphType<StringGraphType>>("chat");
+            Field<StringGraphType>("chat");
             Field<NonNullGraphType<IntGraphType>>("clockStart");
             Field<NonNullGraphType<IntGraphType>>("clockInc");
             Field<NonNullGraphType<IntGraphType>>("clockMax");
@@ -31,8 +31,8 @@ namespace abstractplay.GraphQL
         public string state {get; set;}
         public string renderrep {get; set;}
         public string chat {get; set;}
-        public ushort clockStart {get; set;}
-        public ushort clockInc {get; set;}
-        public ushort clockMax {get; set;}
+        public int clockStart {get; set;}
+        public int clockInc {get; set;}
+        public int clockMax {get; set;}
     }
 }

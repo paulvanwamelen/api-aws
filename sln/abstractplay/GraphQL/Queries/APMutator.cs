@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
+using Amazon.Lambda.Core;
 
 using abstractplay.DB;
 
@@ -79,8 +80,10 @@ namespace abstractplay.GraphQL
                     new QueryArgument<NonNullGraphType<NewGameInputType>> {Name = "input"}
                 ),
                 resolve: _ => {
+                    LambdaLogger.Log("In resolver");
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<NewGameInputDTO>("input");
+                    LambdaLogger.Log("Context and input processed");
 
                     byte[] newgameid = GuidGenerator.GenerateSequentialGuid();
                     var game = new GamesData
@@ -90,15 +93,17 @@ namespace abstractplay.GraphQL
                         Closed = false,
                         Alert = false,
                         ClockFrozen = false,
-                        ClockStart = input.clockStart,
-                        ClockInc = input.clockInc,
-                        ClockMax = input.clockMax
+                        ClockStart = (ushort)input.clockStart,
+                        ClockInc = (ushort)input.clockInc,
+                        ClockMax = (ushort)input.clockMax
                     };
+                    LambdaLogger.Log("GamesData object initialized");
                     //variants
                     if (input.variants.Length > 0)
                     {
                         game.Variants = String.Join('|', input.variants);
                     }
+                    LambdaLogger.Log("Variants added");
                     //chat
                     if (! String.IsNullOrWhiteSpace(input.chat))
                     {
@@ -121,8 +126,9 @@ namespace abstractplay.GraphQL
                         };
                         game.GamesDataPlayers.Add(rec);
                     }
+                    LambdaLogger.Log("Players added");
                     //whoseturn
-                    foreach (var player in input.players)
+                    foreach (var player in input.whoseturn)
                     {
                         var owner = db.Owners.Single(x => x.PlayerId.Equals(GuidGenerator.HelperStringToBA(player)));
                         var rec = new GamesDataWhoseturn
@@ -132,6 +138,7 @@ namespace abstractplay.GraphQL
                         };
                         game.GamesDataWhoseturn.Add(rec);
                     }
+                    LambdaLogger.Log("Whoseturn added");
                     //clocks
                     foreach (var player in input.players)
                     {
@@ -144,6 +151,7 @@ namespace abstractplay.GraphQL
                         };
                         game.GamesDataClocks.Add(rec);
                     }
+                    LambdaLogger.Log("Clocks added");
                     //state
                     var state = new GamesDataStates
                     {

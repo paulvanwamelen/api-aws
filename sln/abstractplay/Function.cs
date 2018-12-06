@@ -199,6 +199,8 @@ namespace abstractplay
 
     public class Functions
     {
+        private static AmazonSimpleNotificationServiceClient snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
+
         public Functions()
         {
 
@@ -218,14 +220,6 @@ namespace abstractplay
             return response;
         }        
 
-        public static async Task<string> SendSns(string arn, string payload)
-        {
-            var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
-            var snsreq = new PublishRequest(arn, payload);
-            await snsclient.PublishAsync(snsreq).ConfigureAwait(false);
-            return null;
-        }
-
         private async Task<string> UpdateGameStatus(string shortcode, bool isUp, string msg)
         {
             GameStatusDTO payload = new GameStatusDTO
@@ -244,7 +238,7 @@ namespace abstractplay
             };
             string query = JsonConvert.SerializeObject(mutreq);
             string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
-            await SendSns(snsarn, query).ConfigureAwait(false);
+            await snsclient.PublishAsync(new PublishRequest(snsarn, query)).ConfigureAwait(false);
             return null;
         }
 
@@ -258,7 +252,6 @@ namespace abstractplay
                 {
                     req.url = "https://" + System.Environment.GetEnvironmentVariable("url_games") + "/" + req.shortcode;
                 }
-                var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
 
                 //check state first
                 bool needMeta = true;
@@ -358,7 +351,7 @@ namespace abstractplay
                 {
                     req.url = "https://" + System.Environment.GetEnvironmentVariable("url_games") + "/" + req.shortcode;
                 }
-                var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
+                LambdaLogger.Log("Posting to the following url:\n"+req.url);
 
                 string gamePayload = JsonConvert.SerializeObject(new {mode = "init", players = req.players, variants = req.variants});
 
@@ -371,7 +364,8 @@ namespace abstractplay
                     if (response.StatusCode == HttpStatusCode.OK)
                     {
                         await UpdateGameStatus(req.shortcode, true, "Action: New Game").ConfigureAwait(false);
-                    } else 
+                    } 
+                    else 
                     {
                         await UpdateGameStatus(req.shortcode, false, "Action: New Game, Status Code: " + response.StatusCode.ToString()).ConfigureAwait(false);
                         return null;
@@ -406,7 +400,7 @@ namespace abstractplay
                     string query = JsonConvert.SerializeObject(mutreq);
                     string snsarn = System.Environment.GetEnvironmentVariable("sns_mutator");
                     LambdaLogger.Log("The following query is being sent to SNS arn "+ snsarn +":\n" + query);
-                    await SendSns(snsarn, query).ConfigureAwait(false);
+                    await snsclient.PublishAsync(new PublishRequest(snsarn, query)).ConfigureAwait(false);
                 }
             }
             return null;

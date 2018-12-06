@@ -7,9 +7,12 @@ using GraphQL;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.SNSEvents;
 using Newtonsoft.Json;
 
 using abstractplay.DB;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
 
 namespace abstractplay.GraphQL
 {
@@ -310,14 +313,17 @@ namespace abstractplay.GraphQL
                     new QueryArgument<NonNullGraphType<RespondChallengeInputType>> {Name = "input"}
                 ),
                 resolve: async _ => {
+                    LambdaLogger.Log("In the resolver");
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<RespondChallengeDTO>("input");
+                    LambdaLogger.Log("Context and input pulled");
 
                     var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! You must create a profile before you can play.");
                     }
+                    LambdaLogger.Log("Logged-in user resolved");
 
                     byte[] binaryid;
                     try
@@ -329,40 +335,28 @@ namespace abstractplay.GraphQL
                         throw new ExecutionError("The challenge ID you provided is malformed. Please verify and try again.");
                     }
 
-                    var challenge = db.Challenges.Include(x => x.ChallengesPlayers).SingleOrDefault(x => x.ChallengeId.Equals(binaryid));
+                    var challenge = db.Challenges.SingleOrDefault(x => x.ChallengeId.Equals(binaryid));
                     if (challenge == null)
                     {
                         throw new ExecutionError("The challenge '"+input.id+"' does not appear to exist.");
                     }
-                    LambdaLogger.Log("Found the following challenge:\nID: "+GuidGenerator.HelperBAToString(challenge.ChallengeId)+"\nGame: "+challenge.Game.Shortcode+"\nOwner: "+GuidGenerator.HelperBAToString(challenge.OwnerId) + "\nThis challenge has the following participants so far:\n");
-                    foreach (var p in challenge.ChallengesPlayers)
-                    {
-                        LambdaLogger.Log("\t" + GuidGenerator.HelperBAToString(p.OwnerId));
-                    }
-                    
+                    LambdaLogger.Log("Challenge loaded");
 
                     var player = db.ChallengesPlayers.SingleOrDefault(x => x.ChallengeId.Equals(challenge.ChallengeId) && x.OwnerId.Equals(user.OwnerId));
                     //challenge.ChallengesPlayers.SingleOrDefault(x => x.OwnerId.Equals(user.OwnerId));
-                    if (player == null)
-                    {
-                        LambdaLogger.Log("The person submitting this request ("+ GuidGenerator.HelperBAToString(user.OwnerId) +") is *not* already a part of the challenge");
-                    }
-                    else
-                    {
-                        LambdaLogger.Log("The person submitting this request ("+ GuidGenerator.HelperBAToString(user.OwnerId) +") *is* already confirmed.");
-                    }
+                    LambdaLogger.Log("Challenge player entry loaded (if exists)");
+
                     //if confirming
                     if (input.confirmed)
                     {
-                        LambdaLogger.Log("Confirmed was true");
                         //They were directly invited and so are already in the database
-                        if (player != null)
+                        if ( (player != null) && (!player.Confirmed) )
                         {
                             player.Confirmed = true;
                             db.ChallengesPlayers.Update(player);
                         }
                         //otherwise, add them
-                        else
+                        else if (player == null)
                         {
                             var node = new ChallengesPlayers
                             {
@@ -378,6 +372,7 @@ namespace abstractplay.GraphQL
                         //Check for full challenge and create game if necessary
                         if (challenge.ChallengesPlayers.Where(x => x.Confirmed).Count() == challenge.NumPlayers)
                         {
+                            LambdaLogger.Log("Game is full! Sending a creation request.");
                             //Send a "new game" request via SNS
                             var req = new NewGameRequest
                             {
@@ -390,7 +385,7 @@ namespace abstractplay.GraphQL
                             //variants
                             if (String.IsNullOrWhiteSpace(challenge.Variants))
                             {
-                                req.variants = null;
+                                req.variants = new string[0];
                             }
                             else
                             {
@@ -401,7 +396,6 @@ namespace abstractplay.GraphQL
                             {
                                 var plist = new List<string>();
                                 var parray = challenge.ChallengesPlayers.ToArray();
-                                //just brute force it for now
                                 //only one of the players will have a defined seat
                                 if ( (parray[0].Seat == 1) || (parray[1].Seat == 2) )
                                 {
@@ -434,35 +428,31 @@ namespace abstractplay.GraphQL
                                 req.players = plist.ToArray();
                             }
                             string payload = JsonConvert.SerializeObject(req);
+                            LambdaLogger.Log("Payload: "+payload);
                             string snsarn = System.Environment.GetEnvironmentVariable("sns_maker");
-                            await Functions.SendSns(snsarn, payload).ConfigureAwait(false);
+                            LambdaLogger.Log("ARN: " + snsarn);
+                            var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
+                            await snsclient.PublishAsync(new PublishRequest(snsarn, payload)).ConfigureAwait(false);
+                            LambdaLogger.Log("Request sent");
 
                             //Delete the challenge
                             db.Challenges.Remove(challenge);
+                            LambdaLogger.Log("Challenge deleted");
                         }
                     }
                     //if withdrawing and the player entry already exists
                     else if (player != null)
                     {
-                        LambdaLogger.Log("Confirmed is false and player is not null");
-                        LambdaLogger.Log("Player ID: "+ GuidGenerator.HelperBAToString(player.OwnerId) +", Owner ID: "+ GuidGenerator.HelperBAToString(challenge.OwnerId));
-                        LambdaLogger.Log((player.OwnerId.SequenceEqual(challenge.OwnerId)).ToString());
                         //Is it the challenge issuer who's withdrawing?
                         if (player.OwnerId.SequenceEqual(challenge.OwnerId))
                         {
-                            LambdaLogger.Log("The owner is withdrawing, so deleting the entire challenge.");
                             db.Challenges.Remove(challenge);
                         }
                         //Or someone else?
                         else
                         {
-                            LambdaLogger.Log("Just removing the player entry");
                             db.ChallengesPlayers.Remove(player);
                         }
-                    }
-                    else
-                    {
-                        LambdaLogger.Log("Confirmed was false, but the player wasn't already involved in the game ("+user.Country+")");
                     }
                     db.SaveChanges();
                     return challenge;
