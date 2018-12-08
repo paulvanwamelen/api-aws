@@ -8,7 +8,14 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 ## Change log
 
-XX Aug 2018:
+XX Dec 2018:
+
+* Had to give up on the standalone games/AI server structure for now. [See development blog for details.](https://www.abstractplay.com)
+    * `games-aws` repository has been archived.
+    * Game code and tests have been moved into the API.
+    * Games are now created synchronously by the GraphQL mutator.
+
+28 Aug 2018:
 
 * Upgraded to NetCore 2.1 and language version 7.1.
 * Found a workaround for EFCore issue!!

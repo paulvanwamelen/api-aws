@@ -24,15 +24,6 @@ provider:
     sns_maker: ${self:custom.snsMakerArn}
     sns_mover: ${self:custom.snsMoverArn}
     url_games: ${file(../apsecrets.yml):domains.games.${self:custom.stage}.domain}
-  iamRoleStatements:
-    - Effect: "Allow"
-      Action:
-        - "sns:Publish"
-      Resource: 
-        - ${self:custom.snsMutatorArn}
-        - ${self:custom.snsPingerArn}
-        - ${self:custom.snsMakerArn}
-        - ${self:custom.snsMoverArn}
 
   stage: dev
   region: us-east-2
@@ -117,41 +108,9 @@ functions:
           reqValidatorName: 'xRequestValidateBody'
           documentation:
             summary: "Authenticated GraphQL entry point (read/write)"
-            description: "This is how authenticated clients are to request data from the service. Mutation requests can only be made via POST."
+            description: "This is how authenticated clients are to mutate data."
             requestModels:
               "application/json": "RequestGraphQLPost"
-
-  MutatorSNS:
-    handler: abstractplay::abstractplay.DBFunctions::Mutator
-    environment:
-      db_server: ${file(../apsecrets.yml):db_server}
-      db_database: ${file(../apsecrets.yml):db_database}
-      db_username: ${file(../apsecrets.yml):db_username}
-      db_password: ${file(../apsecrets.yml):db_password}
-    vpc:
-      securityGroupIds:
-        - ${file(../apsecrets.yml):secGroup}
-      subnetIds:
-        - ${file(../apsecrets.yml):subnet1}
-        - ${file(../apsecrets.yml):subnet2}
-        - ${file(../apsecrets.yml):subnet3}
-    events:
-      - sns: ${self:custom.snsMutatorTopic}
-
-  Pinger:
-    handler: abstractplay::abstractplay.Functions::Pinger
-    events:
-      - sns: ${self:custom.snsPingerTopic}
-
-  GameMaker:
-    handler: abstractplay::abstractplay.Functions::GameMaker
-    events:
-      - sns: ${self:custom.snsMakerTopic}
-
-  # GameMover:
-  #   handler: abstractplay::abstractplay.Functions::GameMover
-  #   events:
-  #     - sns: ${self:custom.snsMoverTopic}
 
   GetGuid:
     handler: abstractplay::abstractplay.Functions::GetSequentialGuid
@@ -189,14 +148,6 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   stageConfig: ${file(../apsecrets.yml):domains.api.${self:custom.stage}}
   region: ${opt:region, self:provider.region}
-  snsMutatorTopic: "${self:service}-mutator-${self:custom.stage}"
-  snsMutatorArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsMutatorTopic}" ] ]  }
-  snsPingerTopic: "${self:service}-pinger-${self:custom.stage}"
-  snsPingerArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsPingerTopic}" ] ]  }
-  snsMakerTopic: "${self:service}-maker-${self:custom.stage}"
-  snsMakerArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsMakerTopic}" ] ]  }
-  snsMoverTopic: "${self:service}-maker-${self:custom.stage}"
-  snsMoverArn: { "Fn::Join" : ["", ["arn:aws:sns:${self:custom.region}:", { "Ref" : "AWS::AccountId" }, ":${self:custom.snsMoverTopic}" ] ]  }
   dotnet:
     slndir: sln/abstractplay
   customDomain:
