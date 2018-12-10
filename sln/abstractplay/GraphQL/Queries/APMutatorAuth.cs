@@ -11,6 +11,7 @@ using Amazon.Lambda.SNSEvents;
 using Newtonsoft.Json;
 
 using abstractplay.DB;
+using abstractplay.Games;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 
@@ -306,13 +307,13 @@ namespace abstractplay.GraphQL
                     return rec;
                 }
             );
-            FieldAsync<ChallengeType>(
+            Field<ChallengeType>(
                 "respondChallenge",
                 description: "Confirm or withdraw from a pending challenge",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<RespondChallengeInputType>> {Name = "input"}
                 ),
-                resolve: async _ => {
+                resolve: _ => {
                     LambdaLogger.Log("In the resolver");
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<RespondChallengeDTO>("input");
@@ -372,26 +373,18 @@ namespace abstractplay.GraphQL
                         //Check for full challenge and create game if necessary
                         if (challenge.ChallengesPlayers.Where(x => x.Confirmed).Count() == challenge.NumPlayers)
                         {
-                            LambdaLogger.Log("Game is full! Sending a creation request.");
-                            //Send a "new game" request via SNS
-                            var req = new NewGameRequest
-                            {
-                                shortcode = challenge.Game.Shortcode,
-                                url = challenge.Game.Url,
-                                clockStart = challenge.ClockStart,
-                                clockInc = challenge.ClockInc,
-                                clockMax = challenge.ClockMax
-                            };
-                            //variants
+                            LambdaLogger.Log("Game is full! Creating the game.");
+                            //Prepare the variant and player lists for the game factory
+                            string[] variants;
                             if (String.IsNullOrWhiteSpace(challenge.Variants))
                             {
-                                req.variants = new string[0];
+                                variants = new string[0];
                             }
                             else
                             {
-                                req.variants = challenge.Variants.Split('|');
+                                variants = challenge.Variants.Split('|');
                             }
-                            //players
+                            string[] players;
                             if (challenge.NumPlayers == 2)
                             {
                                 var plist = new List<string>();
@@ -415,7 +408,7 @@ namespace abstractplay.GraphQL
                                     }
                                     plist.Shuffle();
                                 }
-                                req.players = plist.ToArray();
+                                players = plist.ToArray();
                             }
                             else
                             {
@@ -425,15 +418,30 @@ namespace abstractplay.GraphQL
                                     plist.Add(GuidGenerator.HelperBAToString(o.PlayerId));
                                 }
                                 plist.Shuffle();
-                                req.players = plist.ToArray();
+                                players = plist.ToArray();
                             }
-                            string payload = JsonConvert.SerializeObject(req);
-                            LambdaLogger.Log("Payload: "+payload);
-                            string snsarn = System.Environment.GetEnvironmentVariable("sns_maker");
-                            LambdaLogger.Log("ARN: " + snsarn);
-                            var snsclient = new AmazonSimpleNotificationServiceClient(Amazon.RegionEndpoint.USEast2);
-                            await snsclient.PublishAsync(new PublishRequest(snsarn, payload)).ConfigureAwait(false);
-                            LambdaLogger.Log("Request sent");
+
+                            //Now create the game object. If it fails, then everything aborts.
+                            Game gameobj;
+                            try
+                            {
+                                gameobj = GameFactory.CreateGame(challenge.Game.Shortcode, players, variants);
+                            } 
+                            catch (ArgumentException e)
+                            {
+                                throw new ExecutionError("An error occurred while trying to create the game. Please alert the administrators. The game code said the following: " + e.Message);
+                            }
+                            //Everything appears to be in order, so now we create the various DB objects and store them
+                            var ngdata = new NewGameInput
+                            {
+                                Gameobj = gameobj,
+                                Shortcode = challenge.Game.Shortcode,
+                                ClockStart = challenge.ClockStart,
+                                ClockMax = challenge.ClockMax,
+                                ClockInc = challenge.ClockInc,
+                                Variants = challenge.Variants
+                            };
+                            var newgame = DBFuncs.WriteGame(db, ngdata);
 
                             //Delete the challenge
                             db.Challenges.Remove(challenge);

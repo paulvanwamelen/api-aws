@@ -414,7 +414,7 @@ namespace abstractplay.Tests
         [Fact]
         public void TestGameFactory()
         {
-            Action a = () => GameFactory.CreateGame("");
+            Action a = () => GameFactory.CreateGame("", new string[0], new string[0]);
             Assert.Throws<System.ArgumentOutOfRangeException>(a);
 
             Dictionary<string,string> validgames = new Dictionary<string, string>() {
@@ -422,7 +422,7 @@ namespace abstractplay.Tests
             };
             foreach (var pair in validgames)
             {
-                Assert.Equal(pair.Value, GameFactory.CreateGame(pair.Key).Meta_name);
+                Assert.Equal(pair.Value, GameFactory.CreateGame(pair.Key, new string[] {"10", "20"}, new string[0]).Meta_name);
             }
         }
 
@@ -430,14 +430,13 @@ namespace abstractplay.Tests
         public void TestIthakaClassMethod()
         {
             //constructor
-            Ithaka obj = new Ithaka();
-            Action a = () => obj.Init(new string[2] { "10", "10" });
-            Action b = () => obj.Init(new string[1] { "10" });
+            Action a = () => new Ithaka(new string[2] { "10", "10" });
+            Action b = () => new Ithaka(new string[1] { "10" });
             Assert.Throws<System.ArgumentException>(a);
             Assert.Throws<System.ArgumentException>(b);
 
             //LegalMoves
-            Game basegame = new Ithaka().Init(new string[2] { "10", "20" });
+            Game basegame = new Ithaka(new string[2] { "10", "20" });
             HashSet<string> moves = new HashSet<string>()
             {
                 "a1-b2", "a1-c3",
@@ -470,15 +469,15 @@ namespace abstractplay.Tests
             Assert.Throws<ArgumentException>(tooor);
             Assert.Throws<ArgumentException>(toocc);
             basegame = basegame.Move("10", "a1-b2");
-            Assert.Equal(1, basegame.currplayer);
+            Assert.Equal(1, basegame.Currplayer);
             Assert.Equal("-YRRYY-RB--GBBGG", new string(((Ithaka)basegame).board));
-            Assert.False(basegame.gameover);
+            Assert.False(basegame.Gameover);
             basegame = basegame.Move("20", "a3-c3");
-            Assert.False(basegame.gameover);
+            Assert.False(basegame.Gameover);
             basegame = basegame.Move("10", "b1-c2");
             Assert.Equal("--RRYYYR--BGBBGG", new string(((Ithaka)basegame).board));
-            Assert.True(basegame.gameover);
-            Assert.Equal("10", basegame.winner);
+            Assert.True(basegame.Gameover);
+            Assert.Equal("10", basegame.Winner);
         }
     }
 }

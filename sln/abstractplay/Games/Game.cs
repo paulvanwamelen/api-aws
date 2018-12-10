@@ -7,12 +7,16 @@ namespace abstractplay.Games
 {
     public abstract class Game
     {
-        public string[] players;
-        public int currplayer;
-        public string lastmove;
-        public bool gameover = false;
-        public string winner;
-        public List<string> chatmsgs;
+        protected string[] players;
+        public string[] Players { get => players; }
+        protected int currplayer;
+        public int Currplayer { get => currplayer; }
+        protected string lastmove;
+        protected bool gameover = false;
+        public bool Gameover { get => gameover; }
+        protected string winner;
+        public string Winner { get => winner; }
+        protected List<string> chatmsgs;
 
         public abstract string Meta_version { get; }
         public abstract string Meta_description { get; }
@@ -21,13 +25,14 @@ namespace abstractplay.Games
         public abstract string Meta_state { get; }
         public abstract string Meta_name { get; }
 
-        public abstract Game Init(string[] players);
-        public abstract Game Init(string json);
         public abstract Game Move(string player, string move);
 
-        public virtual string Whoseturn()
+        public abstract string Serialize();
+        public abstract string Render();
+
+        public virtual string[] Whoseturn()
         {
-            return this.players[this.currplayer];
+            return new string[] {this.players[this.currplayer]};
         }
 
         public virtual IEnumerable<string> LegalMoves()

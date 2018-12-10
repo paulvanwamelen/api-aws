@@ -19,10 +19,10 @@ provider:
   versionFunctions: false
   environment:
     COMPlus_TieredCompilation : 1
-    sns_mutator: ${self:custom.snsMutatorArn}
-    sns_pinger: ${self:custom.snsPingerArn}
-    sns_maker: ${self:custom.snsMakerArn}
-    sns_mover: ${self:custom.snsMoverArn}
+    # sns_mutator: ${self:custom.snsMutatorArn}
+    # sns_pinger: ${self:custom.snsPingerArn}
+    # sns_maker: ${self:custom.snsMakerArn}
+    # sns_mover: ${self:custom.snsMoverArn}
     url_games: ${file(../apsecrets.yml):domains.games.${self:custom.stage}.domain}
 
   stage: dev

@@ -74,9 +74,8 @@ namespace abstractplay.Games
         public override string Meta_description { get => meta_description; }
         public override string Meta_version { get => meta_version; }
 
-        public override Game Init(string[] players)
+        public Ithaka(string[] players)
         {
-            Ithaka obj = new Ithaka();
             if (players.Length != 2)
             {
                 throw new System.ArgumentException("You must pass an array of exactly two strings representing the players.");
@@ -86,18 +85,17 @@ namespace abstractplay.Games
             {
                 throw new System.ArgumentException("The list of players must contain no duplicates.");
             }
-            obj.players = players;
-            obj.currplayer = 0;
-            obj.board = "YYRRY--RB--GBBGG".ToCharArray();
-            obj.states = new Dictionary<string, int>();
-            obj.lastmoved = -1;
-            obj.lastmove = "";
-            obj.grid = new SquareFixed(4, 4);
-            obj.chatmsgs = new List<string>();
-            return obj;
+            this.players = players;
+            this.currplayer = 0;
+            this.board = "YYRRY--RB--GBBGG".ToCharArray();
+            this.states = new Dictionary<string, int>();
+            this.lastmoved = -1;
+            this.lastmove = "";
+            this.grid = new SquareFixed(4, 4);
+            this.chatmsgs = new List<string>();
         }
 
-        public override Game Init(string json)
+        public Ithaka(string json)
         {
             Serialized data = JsonConvert.DeserializeObject<Serialized>(json);
 
@@ -110,21 +108,19 @@ namespace abstractplay.Games
                 throw new ArgumentException("The provided game state is for a different version of Ithaka.");
             }
 
-            Ithaka obj = new Ithaka();
-            obj.players = data.players;
-            obj.currplayer = data.currplayer;
-            obj.board = data.board.ToCharArray();
-            obj.lastmoved = data.lastmoved;
-            obj.lastmove = data.lastmove;
-            obj.states = data.states;
-            obj.grid = new SquareFixed(4, 4);
-            obj.winner = data.winner;
-            obj.gameover = data.gameover;
-            obj.chatmsgs = new List<string>();
-            return obj;
+            this.players = data.players;
+            this.currplayer = data.currplayer;
+            this.board = data.board.ToCharArray();
+            this.lastmoved = data.lastmoved;
+            this.lastmove = data.lastmove;
+            this.states = data.states;
+            this.grid = new SquareFixed(4, 4);
+            this.winner = data.winner;
+            this.gameover = data.gameover;
+            this.chatmsgs = new List<string>();
         }
 
-        public string Serialize()
+        public override string Serialize()
         {
             Serialized data = new Serialized()
             {
@@ -140,7 +136,7 @@ namespace abstractplay.Games
             return JsonConvert.SerializeObject(data);
         }
 
-        public string Render()
+        public override string Render()
         {
             Rendered data = new Rendered()
             {
@@ -253,7 +249,7 @@ namespace abstractplay.Games
                 }
             }
             //LEGAL MOVE!
-            Ithaka obj = (Ithaka) new Ithaka().Init(this.Serialize());
+            Ithaka obj = new Ithaka(this.Serialize());
 
             obj.board[toidx] = obj.board[fromidx];
             obj.board[fromidx] = '-';
