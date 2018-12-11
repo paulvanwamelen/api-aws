@@ -494,6 +494,11 @@ namespace abstractplay.GraphQL
                         throw new ExecutionError("The game id you provided ("+ input.id +") does not appear to exist.");
                     }
 
+                    if (game.Closed)
+                    {
+                        throw new ExecutionError("This game has ended. No further moves are possible.");
+                    }
+
                     //Load the latest game state
                     Game gameobj;
                     try
@@ -560,6 +565,11 @@ namespace abstractplay.GraphQL
                     if (game == null)
                     {
                         throw new ExecutionError("The game id you provided ("+ input.id +") does not appear to exist.");
+                    }
+
+                    if (game.Closed)
+                    {
+                        throw new ExecutionError("This game has ended. No further moves are possible.");
                     }
 
                     //Load the latest game state

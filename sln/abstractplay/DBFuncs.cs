@@ -135,6 +135,12 @@ namespace abstractplay
                 };
                 db.GamesDataWhoseturn.Add(node);
             }
+
+            //Check for end of game
+            if (input.Gameobj.Gameover)
+            {
+                input.Gamerec.Closed = true;
+            }
         }
     }
 }
