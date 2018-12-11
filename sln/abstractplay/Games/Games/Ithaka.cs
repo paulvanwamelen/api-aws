@@ -208,7 +208,7 @@ namespace abstractplay.Games
             }
             if (player != players[currplayer])
             {
-                throw new ArgumentOutOfRangeException("Out of turn. Current player: " + players[currplayer] + ". Attempted: " + player + ".");
+                throw new ArgumentOutOfRangeException("It's not your turn! Current player: " + players[currplayer] + ". Attempted: " + player + ".");
             }
             Match m = re_validmove.Match(move);
             if (! m.Success)

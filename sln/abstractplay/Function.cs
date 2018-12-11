@@ -67,16 +67,6 @@ namespace abstractplay
         public string renderrep;
     }
 
-    public struct GameMetadataResponse
-    {
-        public string state;
-        public string version;
-        public int[] playercounts;
-        public string description;
-        public string changelog;
-        public VariantInputDTO[] variants;
-    }
-
     public class DBFunctions
     {
         //private static readonly HttpClient client = new HttpClient();

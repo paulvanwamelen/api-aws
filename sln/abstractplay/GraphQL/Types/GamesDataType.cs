@@ -72,6 +72,11 @@ namespace abstractplay.GraphQL
                 description: "This game's states in ascending chronological order",
                 resolve: _ => ((GamesData)_.Source).GamesDataStates.OrderBy(x => x.Timestamp).ToArray()
             );
+            Field<GamesDataStateType>(
+                "lastState",
+                description: "This game's most recent state",
+                resolve: _ => ((GamesData)_.Source).GamesDataStates.Last()
+            );
             Field<ListGraphType<UserType>>(
                 "whoseTurn",
                 description: "The list of players who can currently move in this game",

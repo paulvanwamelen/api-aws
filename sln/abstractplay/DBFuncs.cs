@@ -16,6 +16,13 @@ namespace abstractplay
         public string Variants;
     }
 
+    public struct UpdateGameInput
+    {
+        public Game Gameobj;
+        public GamesData Gamerec;
+        public byte[] Mover;
+    }
+
     public static class DBFuncs
     {
         public static byte[] PlayerId2OwnerId(MyContext db, byte[] playerid)
@@ -28,9 +35,8 @@ namespace abstractplay
             return GuidGenerator.HelperBAToString(PlayerId2OwnerId(db, GuidGenerator.HelperStringToBA(playerid)));
         }
 
-        public static GamesData WriteGame(MyContext db, NewGameInput input)
+        public static GamesData NewGame(MyContext db, NewGameInput input)
         {
-            LambdaLogger.Log("In 'WriteGame' function.");
             var newgame = new GamesData
             {
                 EntryId = GuidGenerator.GenerateSequentialGuid(),
@@ -45,7 +51,6 @@ namespace abstractplay
             };
             db.GamesData.Add(newgame);
 
-            LambdaLogger.Log("Here are the players recorded in the game object: " + String.Join(", ", input.Gameobj.Players));
             foreach (var p in input.Gameobj.Players)
             {
                 var oid = PlayerId2OwnerId(db, GuidGenerator.HelperStringToBA(p));
@@ -83,6 +88,53 @@ namespace abstractplay
             };
             db.GamesDataStates.Add(newstate);
             return newgame;
+        }
+
+        public static void UpdateGame(MyContext db, UpdateGameInput input)
+        {
+            //Add new state
+            var newstate = new GamesDataStates
+            {
+                StateId = GuidGenerator.GenerateSequentialGuid(),
+                GameId = input.Gamerec.EntryId,
+                State = input.Gameobj.Serialize(),
+                RenderRep = input.Gameobj.Render()
+            };
+            db.GamesDataStates.Add(newstate);
+
+            //Add chat
+            if (! String.IsNullOrEmpty(input.Gameobj.ChatMsgs))
+            {
+                var newchat = new GamesDataChats
+                {
+                    ChatId = GuidGenerator.GenerateSequentialGuid(),
+                    GameId = input.Gamerec.EntryId,
+                    OwnerId = null,
+                    Message = input.Gameobj.ChatMsgs
+                };
+                db.GamesDataChats.Add(newchat);
+            }
+
+            //Update clocks
+            var clock = db.GamesDataClocks.Single(x => x.GameId.Equals(input.Gamerec.EntryId) && x.OwnerId.Equals(input.Mover));
+            var newbank = clock.Bank + input.Gamerec.ClockInc;
+            if (newbank > input.Gamerec.ClockMax)
+            {
+                newbank = input.Gamerec.ClockMax;
+            }
+            clock.Bank = (short)newbank;
+
+            //Update whoseturn
+            db.GamesDataWhoseturn.RemoveRange(db.GamesDataWhoseturn.Where(x => x.GameId.Equals(input.Gamerec.EntryId)));
+            foreach (var p in input.Gameobj.Whoseturn())
+            {
+                var node = new GamesDataWhoseturn
+                {
+                    GameId = input.Gamerec.EntryId,
+                    OwnerId = GuidGenerator.HelperStringToBA(PlayerId2OwnerId(db, p))
+                };
+                db.GamesDataWhoseturn.Add(node);
+            }
         }
     }
 }

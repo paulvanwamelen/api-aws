@@ -17,6 +17,7 @@ namespace abstractplay.Games
         protected string winner;
         public string Winner { get => winner; }
         protected List<string> chatmsgs;
+        public string ChatMsgs { get => String.Join("\n\n", chatmsgs); }
 
         public abstract string Meta_version { get; }
         public abstract string Meta_description { get; }
@@ -32,7 +33,12 @@ namespace abstractplay.Games
 
         public virtual string[] Whoseturn()
         {
-            return new string[] {this.players[this.currplayer]};
+            string[] turns = new string[0];
+            if (! this.Gameover)
+            {
+                turns = new string[] {this.players[this.currplayer]};
+            }
+            return turns;
         }
 
         public virtual IEnumerable<string> LegalMoves()

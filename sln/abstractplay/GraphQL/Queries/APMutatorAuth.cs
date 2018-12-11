@@ -119,7 +119,7 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<PatchProfileDTO>("input");
-                    LambdaLogger.Log(JsonConvert.SerializeObject(input));
+                    // LambdaLogger.Log(JsonConvert.SerializeObject(input));
 
                     //Load profile first
                     Owners rec = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
@@ -314,17 +314,14 @@ namespace abstractplay.GraphQL
                     new QueryArgument<NonNullGraphType<RespondChallengeInputType>> {Name = "input"}
                 ),
                 resolve: _ => {
-                    LambdaLogger.Log("In the resolver");
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<RespondChallengeDTO>("input");
-                    LambdaLogger.Log("Context and input pulled");
 
                     var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! You must create a profile before you can play.");
                     }
-                    LambdaLogger.Log("Logged-in user resolved");
 
                     byte[] binaryid;
                     try
@@ -341,11 +338,9 @@ namespace abstractplay.GraphQL
                     {
                         throw new ExecutionError("The challenge '"+input.id+"' does not appear to exist.");
                     }
-                    LambdaLogger.Log("Challenge loaded");
 
                     var player = db.ChallengesPlayers.SingleOrDefault(x => x.ChallengeId.Equals(challenge.ChallengeId) && x.OwnerId.Equals(user.OwnerId));
                     //challenge.ChallengesPlayers.SingleOrDefault(x => x.OwnerId.Equals(user.OwnerId));
-                    LambdaLogger.Log("Challenge player entry loaded (if exists)");
 
                     //if confirming
                     if (input.confirmed)
@@ -373,7 +368,6 @@ namespace abstractplay.GraphQL
                         //Check for full challenge and create game if necessary
                         if (challenge.ChallengesPlayers.Where(x => x.Confirmed).Count() == challenge.NumPlayers)
                         {
-                            LambdaLogger.Log("Game is full! Creating the game.");
                             //Prepare the variant and player lists for the game factory
                             string[] variants;
                             if (String.IsNullOrWhiteSpace(challenge.Variants))
@@ -441,11 +435,10 @@ namespace abstractplay.GraphQL
                                 ClockInc = challenge.ClockInc,
                                 Variants = challenge.Variants
                             };
-                            var newgame = DBFuncs.WriteGame(db, ngdata);
+                            var newgame = DBFuncs.NewGame(db, ngdata);
 
                             //Delete the challenge
                             db.Challenges.Remove(challenge);
-                            LambdaLogger.Log("Challenge deleted");
                         }
                     }
                     //if withdrawing and the player entry already exists
@@ -464,6 +457,134 @@ namespace abstractplay.GraphQL
                     }
                     db.SaveChanges();
                     return challenge;
+                }
+            );
+            Field<GamesDataType>(
+                "moveGame",
+                description: "Submit a move to a game",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<MoveGameInputType>> {Name = "input"}
+                ),
+                resolve: _ => {
+                    LambdaLogger.Log("In the 'moveGame' resolver");
+                    var context = (UserContext)_.UserContext;
+                    var input = _.GetArgument<MoveGameDTO>("input");
+                    LambdaLogger.Log("Context and input pulled");
+ 
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    if (user == null)
+                    {
+                        throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");
+                    }
+
+                    byte[] binaryid;
+                    try
+                    {
+                        binaryid = GuidGenerator.HelperStringToBA(input.id);
+                    }
+                    catch
+                    {
+                        throw new ExecutionError("The game ID you provided is malformed. Please verify and try again.");
+                    }
+
+                    //Does this game id exist?
+                    var game = db.GamesData.SingleOrDefault(x => x.EntryId.Equals(binaryid));
+                    if (game == null)
+                    {
+                        throw new ExecutionError("The game id you provided ("+ input.id +") does not appear to exist.");
+                    }
+
+                    //Load the latest game state
+                    Game gameobj;
+                    try
+                    {
+                        gameobj = GameFactory.LoadGame(game.GameMeta.Shortcode, game.GamesDataStates.Last().State);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ExecutionError("An error occurred while trying to load the game. Please alert the administrators. The game code said the following: " + e.Message);
+                    }
+
+                    //Is the move legal?
+                    Game newgameobj;
+                    try
+                    {
+                        newgameobj = gameobj.Move(GuidGenerator.HelperBAToString(user.PlayerId), input.move);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ExecutionError("Your move was not accepted. The game code said the following: " + e.Message);
+                    }
+
+                    //Build game object
+                    var uginput = new UpdateGameInput
+                    {
+                        Gameobj = newgameobj,
+                        Gamerec = game,
+                        Mover = user.OwnerId
+                    };
+                    DBFuncs.UpdateGame(db, uginput);
+                    db.SaveChanges();
+
+                    return game;
+                }
+            );
+            Field<GamesDataPreviewType>(
+                "moveGamePreview",
+                description: "Preview a move to a game",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<MoveGameInputType>> {Name = "input"}
+                ),
+                resolve: _ => {
+                    var context = (UserContext)_.UserContext;
+                    var input = _.GetArgument<MoveGameDTO>("input");
+ 
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    if (user == null)
+                    {
+                        throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");
+                    }
+
+                    byte[] binaryid;
+                    try
+                    {
+                        binaryid = GuidGenerator.HelperStringToBA(input.id);
+                    }
+                    catch
+                    {
+                        throw new ExecutionError("The game ID you provided is malformed. Please verify and try again.");
+                    }
+
+                    //Does this game id exist?
+                    var game = db.GamesData.SingleOrDefault(x => x.EntryId.Equals(binaryid));
+                    if (game == null)
+                    {
+                        throw new ExecutionError("The game id you provided ("+ input.id +") does not appear to exist.");
+                    }
+
+                    //Load the latest game state
+                    Game gameobj;
+                    try
+                    {
+                        gameobj = GameFactory.LoadGame(game.GameMeta.Shortcode, game.GamesDataStates.Last().State);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ExecutionError("An error occurred while trying to load the game. Please alert the administrators. The game code said the following: " + e.Message);
+                    }
+
+                    //Is the move legal?
+                    Game newgameobj;
+                    try
+                    {
+                        newgameobj = gameobj.Move(GuidGenerator.HelperBAToString(user.PlayerId), input.move);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ExecutionError("Your move was not accepted. The game code said the following: " + e.Message);
+                    }
+
+                    return newgameobj;
                 }
             );
         }

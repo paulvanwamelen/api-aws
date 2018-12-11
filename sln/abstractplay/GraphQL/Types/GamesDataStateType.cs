@@ -19,6 +19,7 @@ namespace abstractplay.GraphQL
                 resolve: _ => ((GamesDataStates)_.Source).Game
             );
             Field(x => x.State).Name("state").Description("The text of the state itself");
+            Field(x => x.RenderRep).Name("renderrep").Description("The render representation of this state");
             Field(x => x.Timestamp).Name("timestamp").Description("The date and time this state was registered");
         }
     }
