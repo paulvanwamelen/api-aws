@@ -18,6 +18,7 @@ namespace abstractplay.DB
         public virtual DbSet<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
         public virtual DbSet<GamesMeta> GamesMeta { get; set; }
         public virtual DbSet<GamesMetaPublishers> GamesMetaPublishers { get; set; }
+        public virtual DbSet<GamesMetaRanks> GamesMetaRanks { get; set; }
         public virtual DbSet<GamesMetaStatus> GamesMetaStatus { get; set; }
         public virtual DbSet<GamesMetaTags> GamesMetaTags { get; set; }
         public virtual DbSet<GamesMetaVariants> GamesMetaVariants { get; set; }
@@ -467,6 +468,43 @@ namespace abstractplay.DB
                 entity.Property(e => e.Url).HasColumnType("varchar(255)");
             });
 
+            modelBuilder.Entity<GamesMetaRanks>(entity =>
+            {
+                entity.HasKey(e => e.EntryId);
+
+                entity.ToTable("games_meta_ranks");
+
+                entity.HasIndex(e => e.GameId)
+                    .HasName("fk_game2game");
+
+                entity.HasIndex(e => e.Rank)
+                    .HasName("idx_rank");
+
+                entity.HasIndex(e => new { e.OwnerId, e.GameId })
+                    .HasName("idx_unique")
+                    .IsUnique();
+
+                entity.Property(e => e.EntryId).HasMaxLength(16);
+
+                entity.Property(e => e.GameId)
+                    .IsRequired()
+                    .HasMaxLength(16);
+
+                entity.Property(e => e.OwnerId)
+                    .IsRequired()
+                    .HasMaxLength(16);
+
+                entity.HasOne(d => d.Game)
+                    .WithMany(p => p.GamesMetaRanks)
+                    .HasForeignKey(d => d.GameId)
+                    .HasConstraintName("fk_game2game");
+
+                entity.HasOne(d => d.Owner)
+                    .WithMany(p => p.GamesMetaRanks)
+                    .HasForeignKey(d => d.OwnerId)
+                    .HasConstraintName("fk_owner2owner");
+            });
+
             modelBuilder.Entity<GamesMetaStatus>(entity =>
             {
                 entity.HasKey(e => e.StatusId);
@@ -520,6 +558,10 @@ namespace abstractplay.DB
 
                 entity.HasIndex(e => e.Tag)
                     .HasName("idx_tag");
+
+                entity.HasIndex(e => new { e.GameId, e.OwnerId, e.Tag })
+                    .HasName("idx_unique")
+                    .IsUnique();
 
                 entity.Property(e => e.EntryId).HasMaxLength(16);
 

@@ -9,6 +9,7 @@ namespace abstractplay.DB
         {
             Challenges = new HashSet<Challenges>();
             GamesData = new HashSet<GamesData>();
+            GamesMetaRanks = new HashSet<GamesMetaRanks>();
             GamesMetaStatus = new HashSet<GamesMetaStatus>();
             GamesMetaTags = new HashSet<GamesMetaTags>();
             GamesMetaVariants = new HashSet<GamesMetaVariants>();
@@ -30,6 +31,7 @@ namespace abstractplay.DB
         public virtual GamesMetaPublishers Publisher { get; set; }
         public virtual ICollection<Challenges> Challenges { get; set; }
         public virtual ICollection<GamesData> GamesData { get; set; }
+        public virtual ICollection<GamesMetaRanks> GamesMetaRanks { get; set; }
         public virtual ICollection<GamesMetaStatus> GamesMetaStatus { get; set; }
         public virtual ICollection<GamesMetaTags> GamesMetaTags { get; set; }
         public virtual ICollection<GamesMetaVariants> GamesMetaVariants { get; set; }

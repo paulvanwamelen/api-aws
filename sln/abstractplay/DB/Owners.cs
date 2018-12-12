@@ -13,6 +13,7 @@ namespace abstractplay.DB
             GamesDataClocks = new HashSet<GamesDataClocks>();
             GamesDataPlayers = new HashSet<GamesDataPlayers>();
             GamesDataWhoseturn = new HashSet<GamesDataWhoseturn>();
+            GamesMetaRanks = new HashSet<GamesMetaRanks>();
             GamesMetaTags = new HashSet<GamesMetaTags>();
             OwnersNames = new HashSet<OwnersNames>();
         }
@@ -32,6 +33,7 @@ namespace abstractplay.DB
         public virtual ICollection<GamesDataClocks> GamesDataClocks { get; set; }
         public virtual ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }
         public virtual ICollection<GamesDataWhoseturn> GamesDataWhoseturn { get; set; }
+        public virtual ICollection<GamesMetaRanks> GamesMetaRanks { get; set; }
         public virtual ICollection<GamesMetaTags> GamesMetaTags { get; set; }
         public virtual ICollection<OwnersNames> OwnersNames { get; set; }
     }
