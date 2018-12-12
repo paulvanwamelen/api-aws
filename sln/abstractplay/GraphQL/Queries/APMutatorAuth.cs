@@ -7,13 +7,10 @@ using GraphQL;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.SNSEvents;
 using Newtonsoft.Json;
 
 using abstractplay.DB;
 using abstractplay.Games;
-using Amazon.SimpleNotificationService;
-using Amazon.SimpleNotificationService.Model;
 
 namespace abstractplay.GraphQL
 {

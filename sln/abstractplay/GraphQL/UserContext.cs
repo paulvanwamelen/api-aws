@@ -1,6 +1,5 @@
 using System;
 using Amazon.Lambda.APIGatewayEvents;
-using Amazon.SimpleNotificationService;
 
 namespace abstractplay.GraphQL
 {

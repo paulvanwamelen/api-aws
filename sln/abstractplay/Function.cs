@@ -1,8 +1,5 @@
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.SNSEvents;
-using Amazon.SimpleNotificationService;
-using Amazon.SimpleNotificationService.Model;
 using GraphQL;
 using GraphQL.Types;
 using GraphQL.Validation;
