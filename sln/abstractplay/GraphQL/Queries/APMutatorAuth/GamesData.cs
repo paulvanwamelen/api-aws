@@ -28,10 +28,8 @@ namespace abstractplay.GraphQL
                     new QueryArgument<NonNullGraphType<MoveGameInputType>> {Name = "input"}
                 ),
                 resolve: _ => {
-                    LambdaLogger.Log("In the 'moveGame' resolver");
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<MoveGameDTO>("input");
-                    LambdaLogger.Log("Context and input pulled");
  
                     var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
                     if (user == null)

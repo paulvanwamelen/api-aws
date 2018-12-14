@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using GraphQL;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
@@ -69,9 +70,25 @@ namespace abstractplay.GraphQL
             Field<ListGraphType<GamesMetaType>>(
                 "gamesMeta",
                 description: "Metadata for multiple games",
+                arguments: new QueryArguments(new[] {
+                    new QueryArgument<StringGraphType> { Name = "tag", Description = "A tag to search for" }
+                }),
                 resolve: _ =>
                 {
-                    return db.GamesMeta.ToArray();
+                    var tag = _.GetArgument<string>("tag");
+                    if (!String.IsNullOrWhiteSpace(tag))
+                    {
+                        List<GamesMeta> retlst = new List<GamesMeta>();
+                        foreach (var rec in db.GamesMetaTags.Where(x => x.Tag.Equals(tag)))
+                        {
+                            retlst.Add(rec.Game);
+                        }
+                        return retlst;
+                    }
+                    else
+                    {
+                        return db.GamesMeta.ToArray();
+                    }
                 }
             );
             Field<ChallengeType>(

@@ -2,7 +2,7 @@ using GraphQL.Types;
 
 namespace abstractplay.GraphQL
 {
-    //Used when *creating* profiles
+    //Used when updating game rankings
     public class UpdateRankingsInputType : InputObjectGraphType
     {
         public UpdateRankingsInputType()

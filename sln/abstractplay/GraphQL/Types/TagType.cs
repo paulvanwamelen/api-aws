@@ -11,7 +11,7 @@ namespace abstractplay.GraphQL
             Field<StringGraphType>("id", resolve: _ => GuidGenerator.HelperBAToString(((GamesMetaTags)_.Source).EntryId), description: "Tag entry's unique ID number");
             Field(x => x.Tag).Name("tag").Description("The tag itself");
             Field<GamesMetaType>("game", resolve: _ => ((GamesMetaTags)_.Source).Game, description: "The game the tag applies to");
-            Field<GamesMetaType>("user", resolve: _ => ((GamesMetaTags)_.Source).Owner, description: "The user who applied the tag");
+            Field<UserType>("user", resolve: _ => ((GamesMetaTags)_.Source).Owner, description: "The user who applied the tag");
         }
     }
 }
