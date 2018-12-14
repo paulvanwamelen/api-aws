@@ -25,6 +25,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="2.1.4" />
+    <PackageReference Include="Perlkonig.Condorcet" Version="0.1.0" />
     <PackageReference Include="pomelo.entityframeworkcore.mysql" Version="2.1.4" />
   </ItemGroup>
 
