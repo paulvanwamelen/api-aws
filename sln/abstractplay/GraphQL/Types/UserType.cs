@@ -94,6 +94,20 @@ namespace abstractplay.GraphQL
                     }
                 }
             );
+            Field<ListGraphType<RankType>>(
+                "rankings",
+                description: "Rankings this user has given to different games",
+                resolve: _ =>
+                {
+                    var rec = (Owners)_.Source;
+                    if (rec.Anonymous)
+                    {
+                        return null;
+                    } else {
+                        return rec.GamesMetaRanks.ToArray();
+                    }
+                }
+            );
             Field<ListGraphType<ChallengeType>>(
                 "challenges", 
                 description: "Challenges this user has issued",

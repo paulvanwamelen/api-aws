@@ -21,9 +21,10 @@ namespace abstractplay.GraphQL
     {
         public APMutatorAuth(MyContext db)
         {
-            Profiles(db);
             Challenges(db);
             GamesData(db);
+            GamesMeta(db);
+            Profiles(db);
         }
     }
 }

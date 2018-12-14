@@ -43,6 +43,11 @@ namespace abstractplay.GraphQL
                 description: "Challenges associated with this game",
                 resolve: _ => ((GamesMeta)_.Source).Challenges.ToArray()
             );
+            Field<ListGraphType<RankType>>(
+                "rankings",
+                description: "The rankings given to this game by different users",
+                resolve: _ => ((GamesMeta)_.Source).GamesMetaRanks.ToArray()
+            );
             // Field<ListGraphType<GamesDataType>>(
             //     "games",
             //     description: "All current instances of this game",

@@ -24,6 +24,11 @@ namespace abstractplay.GraphQL
                 description: "Your past display names",
                 resolve: _ => ((Owners)_.Source).OwnersNames.ToArray()
             );
+            Field<ListGraphType<RankType>>(
+                "ranks",
+                description: "Ranks you have applied",
+                resolve: _ => ((Owners)_.Source).GamesMetaRanks.ToArray()
+            );
             Field<ListGraphType<TagType>>(
                 "tags", 
                 description: "Tags you have applied",
