@@ -199,6 +199,28 @@ namespace abstractplay.Games
             }
         }
 
+        public override Game Resign(string player)
+        {
+            Ithaka obj = new Ithaka(this.Serialize());
+            obj.gameover = true;
+            string winner = null;
+            foreach (var p in obj.players)
+            {
+                if (p != player)
+                {
+                    winner = p;
+                    break;
+                }
+            }
+            if (winner == null)
+            {
+                throw new InvalidOperationException("A winner couldn't be determined after someone resigned. This should never happen!");
+            }
+            obj.winner = winner;
+            obj.chatmsgs.Add("[u "+ player +"] resigned. The winner is [u " + winner + "]!");
+            return obj;
+        }
+
         public override Game Move(string player, string move)
         {
             move = move.ToLower();

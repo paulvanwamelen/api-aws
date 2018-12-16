@@ -157,6 +157,51 @@ namespace abstractplay.GraphQL
                     return newgameobj;
                 }
             );
+            Field<GamesDataChatType>(
+                "newChat",
+                description: "Post a new chat message to a game",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<NewChatInputType>> {Name = "input"}
+                ),
+                resolve: _ => {
+                    var context = (UserContext)_.UserContext;
+                    var input = _.GetArgument<NewChatDTO>("input");
+ 
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    if (user == null)
+                    {
+                        throw new ExecutionError("You don't appear to have a user account! Only registered users can chat in games.");
+                    }
+
+                    byte[] binaryid;
+                    try
+                    {
+                        binaryid = GuidGenerator.HelperStringToBA(input.id);
+                    }
+                    catch
+                    {
+                        throw new ExecutionError("The game ID you provided is malformed. Please verify and try again.");
+                    }
+
+                    //Does this game id exist?
+                    var game = db.GamesData.SingleOrDefault(x => x.EntryId.Equals(binaryid));
+                    if (game == null)
+                    {
+                        throw new ExecutionError("The game id you provided ("+ input.id +") does not appear to exist.");
+                    }
+
+                    var rec = new GamesDataChats
+                    {
+                        ChatId = GuidGenerator.GenerateSequentialGuid(),
+                        GameId = binaryid,
+                        OwnerId = user.OwnerId,
+                        Message = input.message
+                    };
+                    db.GamesDataChats.Add(rec);
+                    db.SaveChanges();
+                    return rec;
+                }
+            );
         }
     }
 }

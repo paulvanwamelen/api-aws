@@ -45,5 +45,7 @@ namespace abstractplay.Games
         {
             throw new NotImplementedException("This game cannot generate a list of legal moves.");
         }
+
+        public abstract Game Resign(string player);
     }
 }

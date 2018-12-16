@@ -1,0 +1,95 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "id": "https://www.abstractplay.com/schemas/game_archived_1.0.0.json#",
+    "title": "Record of a completed game",
+    "definitions": {
+        "move": {
+            "type": "object",
+            "properties": {
+                "player": { "type": "string" },
+                "steps": {
+                    "description": "The individual steps in the move. Usually this is just a single string, but games like Homeworlds and Realm are more involved.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string" }
+                },
+                "result": { "type": "string", "description": "It may be appropriate to record how many points a player gained after a move or something like that." }
+            },
+            "required": ["player", "steps"]
+        }
+    },
+    "type": "object",
+    "properties": {
+        "header": {
+            "description": "Report header",
+            "type": "object",
+            "properties": {
+                "reportId": { "type": "string" },
+                "game": {
+                    "description": "Information about the game itself (e.g., Ithaka, Homeworlds)",
+                    "type": "object",
+                    "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "variants": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    },
+                    "required": ["id"]
+                },
+                "dates": {
+                    "type": "object",
+                    "properties": {
+                        "start": { "type": "string", "format": "date-time" },
+                        "end": { "type": "string", "format": "date-time" }
+                    },
+                    "required": ["end"]
+                },
+                "event": {
+                    "description": "Optional. Only present if game was part of a ladder or tournament.",
+                    "type": "object",
+                    "properties": {
+                        "type": { "type": "string", "enum": ["ladder", "tournament"] },
+                        "name": { "type": "string" },
+                        "id": { "type": "string" },
+                        "round": { "type": "integer", "minimum": 1 }
+                    },
+                    "required": ["type", "id"]
+                },
+                "timeControl": {
+                    "description": "The three numbers represent the clock's starting value, the amount of time added after a move, and the maximum amount of time that can accumulate, in hours.",
+                    "type": "string",
+                    "pattern": "^[0-9]+\/[0-9]+\/[0-9]+$"
+                },
+                "players": {
+                    "description": "Where appropriate, list in turn order.",
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "minItems": 1
+                },
+                "results": {
+                    "description": "An array of arrays, listing players from first place to last. Ties are signalled by putting multiple players in a single array.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": { "type": "string" }
+                    }
+                },
+                "termination": { "type": "string", "enum": ["normal", "resignation", "timeout"] }
+            },
+            "required": ["reportId", "game", "dates", "players", "results"]
+        },
+        "moves": {
+            "description": "The moves themselves, expressed as an array of arrays of objects. Each item in the first array represents a single turn. For most games, the second array will only contain a single move for a single player, but for simultaneous games, the second array will contain all the players' moves that turn.",
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/move" }
+            }
+        }
+    },
+    "required": ["header", "moves"]
+}

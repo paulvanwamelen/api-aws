@@ -18,7 +18,7 @@
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.1.3" />
     <PackageReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
     <PackageReference Include="EntityFrameworkCore.Scaffolding.Handlebars" Version="1.5.1" />
-    <PackageReference Include="glicko-2rankingsystem" Version="1.0.21" />
+    <PackageReference Include="glicko-2rankingsystem" Version="2.0.0" />
     <PackageReference Include="graphql" Version="2.4.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.1.4">
