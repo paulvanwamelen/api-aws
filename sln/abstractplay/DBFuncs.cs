@@ -162,7 +162,7 @@ namespace abstractplay
                             dates = new
                             {
                                 start = allstates.First().Timestamp,
-                                end = allstates.Last().Timestamp
+                                end = allstates.Last().Timestamp.Truncate(TimeSpan.FromSeconds(1))
                             },
                             //Add `event` one day
                             timeControl = String.Join('/', new string[] {input.Gamerec.ClockStart.ToString(), input.Gamerec.ClockInc.ToString(), input.Gamerec.ClockMax.ToString()}),

@@ -202,6 +202,84 @@ namespace abstractplay.GraphQL
                     return rec;
                 }
             );
-        }
+            Field<GamesDataType>(
+            "resignGame",
+            description: "Resign from a game in progress",
+            arguments: new QueryArguments(
+                new QueryArgument<NonNullGraphType<ResignGameInputType>> {Name = "input"}
+            ),
+            resolve: _ => {
+                var context = (UserContext)_.UserContext;
+                var input = _.GetArgument<ResignGameDTO>("input");
+
+                var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                if (user == null)
+                {
+                    throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");
+                }
+
+                if (! input.confirmed)
+                {
+                    throw new ExecutionError("You must set `confirmed` to `true` to proceed. This action cannot be undone!");
+                }
+
+                byte[] binaryid;
+                try
+                {
+                    binaryid = GuidGenerator.HelperStringToBA(input.id);
+                }
+                catch
+                {
+                    throw new ExecutionError("The game ID you provided is malformed. Please verify and try again.");
+                }
+
+                //Does this game id exist?
+                var game = db.GamesData.SingleOrDefault(x => x.EntryId.Equals(binaryid));
+                if (game == null)
+                {
+                    throw new ExecutionError("The game id you provided ("+ input.id +") does not appear to exist.");
+                }
+
+                if (game.Closed)
+                {
+                    throw new ExecutionError("This game has ended. No further moves are possible.");
+                }
+
+                //Load the latest game state
+                Game gameobj;
+                try
+                {
+                    gameobj = GameFactory.LoadGame(game.GameMeta.Shortcode, game.GamesDataStates.Last().State);
+                }
+                catch (Exception e)
+                {
+                    throw new ExecutionError("An error occurred while trying to load the game. Please alert the administrators. The game code said the following: " + e.Message);
+                }
+
+                //Is the move legal?
+                Game newgameobj;
+                try
+                {
+                    newgameobj = gameobj.Resign(GuidGenerator.HelperBAToString(user.PlayerId));
+                }
+                catch (Exception e)
+                {
+                    throw new ExecutionError("The resignation failed. The game code said the following: " + e.Message);
+                }
+
+                //Build game object
+                var uginput = new UpdateGameInput
+                {
+                    Gameobj = newgameobj,
+                    Gamerec = game,
+                    Mover = user.OwnerId
+                };
+                DBFuncs.UpdateGame(db, uginput);
+                db.SaveChanges();
+
+                return game;
+            }
+            );
+       }
     }
 }

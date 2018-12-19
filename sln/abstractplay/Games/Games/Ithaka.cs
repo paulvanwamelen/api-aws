@@ -205,6 +205,13 @@ namespace abstractplay.Games
         public override Game Resign(string player)
         {
             Ithaka obj = new Ithaka(this.Serialize());
+
+            if (! this.Players.Contains(player))
+            {
+                throw new ArgumentException("The player ID provided is not playing this game!");
+            }
+
+            obj.lastmove = null;
             obj.gameover = true;
             string winner = null;
             foreach (var p in obj.players)
@@ -355,6 +362,10 @@ namespace abstractplay.Games
             {
                 var s1 = objs[i];
                 var s2 = objs[i+1];
+                if (s2.lastmove == null)
+                {
+                    break;
+                }
                 var node = new 
                 {
                     player = s1.Whoseturn()[0],
