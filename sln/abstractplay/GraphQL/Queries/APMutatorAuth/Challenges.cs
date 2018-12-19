@@ -94,7 +94,7 @@ namespace abstractplay.GraphQL
                     };
                     if (input.variants.Length > 0)
                     {
-                        rec.Variants = String.Join('|', input.variants);
+                        rec.Variants = String.Join('\n', input.variants);
                     }
                     //Add issuer
                     var issuer = new ChallengesPlayers {
@@ -207,7 +207,7 @@ namespace abstractplay.GraphQL
                             }
                             else
                             {
-                                variants = challenge.Variants.Split('|');
+                                variants = challenge.Variants.Split('\n');
                             }
                             string[] players;
                             if (challenge.NumPlayers == 2)

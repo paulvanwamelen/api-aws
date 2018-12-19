@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using abstractplay.Grids.Square;
+using System.Linq;
 
 namespace abstractplay.Games
 {
@@ -131,7 +132,9 @@ namespace abstractplay.Games
                 board = new string(this.board),
                 lastmoved = this.lastmoved,
                 lastmove = this.lastmove,
-                states = this.states
+                states = this.states,
+                gameover = this.gameover,
+                winner = this.winner
             };
             return JsonConvert.SerializeObject(data);
         }
@@ -217,7 +220,16 @@ namespace abstractplay.Games
                 throw new InvalidOperationException("A winner couldn't be determined after someone resigned. This should never happen!");
             }
             obj.winner = winner;
-            obj.chatmsgs.Add("[u "+ player +"] resigned. The winner is [u " + winner + "]!");
+            obj.chatmsgs.Add("[u "+ player +"] resigned. The winner is [u " + obj.winner + "]!");
+            return obj;
+        }
+
+        public override Game Draw()
+        {
+            Ithaka obj = new Ithaka(this.Serialize());
+            obj.gameover = true;
+            obj.winner = null;
+            obj.chatmsgs.Add("The players called it a draw.");
             return obj;
         }
 
@@ -300,14 +312,14 @@ namespace abstractplay.Games
             {
                 obj.gameover = true;
                 obj.winner = obj.players[(currplayer + 1) % obj.players.Length];
-                obj.chatmsgs.Add("The game has ended for the following reason: REPEATED BOARD POSITION. The winner is [u " + winner + "]!");
+                obj.chatmsgs.Add("The game has ended for the following reason: REPEATED BOARD POSITION. The winner is [u " + obj.winner + "]!");
             }
             //no more moves
             else if (new HashSet<string>(LegalMoves()).Count == 0)
             {
                 obj.gameover = true;
                 obj.winner = obj.players[currplayer];
-                obj.chatmsgs.Add("The game has ended for the following reason: NO MOVES LEFT. The winner is [u " + winner + "]!");
+                obj.chatmsgs.Add("The game has ended for the following reason: NO MOVES LEFT. The winner is [u " + obj.winner + "]!");
             }
             //line of 3
             else
@@ -325,7 +337,7 @@ namespace abstractplay.Games
                 {
                     obj.gameover = true;
                     obj.winner = obj.players[currplayer];
-                    obj.chatmsgs.Add("The game has ended for the following reason: THREE IN A ROW. The winner is [u " + winner + "]!");
+                    obj.chatmsgs.Add("The game has ended for the following reason: THREE IN A ROW. The winner is [u " + obj.winner + "]!");
                 }
             }
 
@@ -333,6 +345,24 @@ namespace abstractplay.Games
             obj.currplayer = (obj.currplayer + 1) % obj.players.Length;
 
             return obj;
+        }
+
+        public override IEnumerable<IEnumerable<Object>> MovesArchive(string[] states)
+        {
+            List<List<Object>> retlst  = new List<List<object>>();
+            Ithaka[] objs = states.Select(x => new Ithaka(x)).ToArray();
+            for (var i=0; i<states.Length-1; i++)
+            {
+                var s1 = objs[i];
+                var s2 = objs[i+1];
+                var node = new 
+                {
+                    player = s1.Whoseturn()[0],
+                    steps = new string[] {s2.lastmove}
+                };
+                retlst.Add(new List<Object>() {node});
+            }
+            return retlst;
         }
     }
 }

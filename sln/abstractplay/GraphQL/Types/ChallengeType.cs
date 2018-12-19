@@ -51,7 +51,7 @@ namespace abstractplay.GraphQL
             Field<ListGraphType<StringGraphType>>(
                 "variants", 
                 description: "List of variants applied to this challenge", 
-                resolve: _ => ((Challenges)_.Source).Variants.Split('|')
+                resolve: _ => ((Challenges)_.Source).Variants.Split('\n')
             );
             Field<ListGraphType<UserType>>(
                 "players", 

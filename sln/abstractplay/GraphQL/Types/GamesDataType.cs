@@ -28,7 +28,7 @@ namespace abstractplay.GraphQL
                     var rec = ((GamesData)_.Source).Variants;
                     if (rec != null)
                     {
-                        return rec.Split('|');
+                        return rec.Split('\n');
                     }
                     else
                     {

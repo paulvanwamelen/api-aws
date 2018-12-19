@@ -47,5 +47,35 @@ namespace abstractplay.Games
         }
 
         public abstract Game Resign(string player);
+        public abstract Game Draw();
+
+        // This default only works for two-player games
+        public virtual IEnumerable<IEnumerable<string>> Results()
+        {
+            if (this.Players.Length != 2)
+            {
+                throw new InvalidOperationException("The default `Results()` method can only handle games with two players.");
+            }
+
+            if (! this.Gameover)
+            {
+                throw new InvalidOperationException("The game isn't over, so results cannot be tabulated.");
+            }
+
+            List<List<string>> retlst = new List<List<string>>();
+            retlst.Add(new List<string>() {this.Winner});
+            foreach (var p in Players)
+            {
+                if (p != this.Winner)
+                {
+                    retlst.Add(new List<string>() {p});
+                    break;
+                }
+            }
+            return retlst;
+        }
+
+        public abstract IEnumerable<IEnumerable<Object>> MovesArchive(string[] states);
+
     }
 }

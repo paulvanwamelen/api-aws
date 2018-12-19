@@ -10,6 +10,7 @@ namespace abstractplay.DB
         public virtual DbSet<Announcements> Announcements { get; set; }
         public virtual DbSet<Challenges> Challenges { get; set; }
         public virtual DbSet<ChallengesPlayers> ChallengesPlayers { get; set; }
+        public virtual DbSet<GamesArchive> GamesArchive { get; set; }
         public virtual DbSet<GamesData> GamesData { get; set; }
         public virtual DbSet<GamesDataChats> GamesDataChats { get; set; }
         public virtual DbSet<GamesDataClocks> GamesDataClocks { get; set; }
@@ -136,6 +137,19 @@ namespace abstractplay.DB
                     .WithMany(p => p.ChallengesPlayers)
                     .HasForeignKey(d => d.OwnerId)
                     .HasConstraintName("fk_entry2owner");
+            });
+
+            modelBuilder.Entity<GamesArchive>(entity =>
+            {
+                entity.HasKey(e => e.ReportId);
+
+                entity.ToTable("games_archive");
+
+                entity.Property(e => e.ReportId).HasMaxLength(16);
+
+                entity.Property(e => e.Json)
+                    .IsRequired()
+                    .HasColumnType("longtext");
             });
 
             modelBuilder.Entity<GamesData>(entity =>

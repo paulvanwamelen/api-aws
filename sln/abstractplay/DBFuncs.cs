@@ -3,6 +3,9 @@ using abstractplay.Games;
 using abstractplay.DB;
 using System.Linq;
 using Amazon.Lambda.Core;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace abstractplay
 {
@@ -98,7 +101,8 @@ namespace abstractplay
                 StateId = GuidGenerator.GenerateSequentialGuid(),
                 GameId = input.Gamerec.EntryId,
                 State = input.Gameobj.Serialize(),
-                RenderRep = input.Gameobj.Render()
+                RenderRep = input.Gameobj.Render(),
+                Timestamp = DateTime.UtcNow
             };
             db.GamesDataStates.Add(newstate);
 
@@ -140,6 +144,42 @@ namespace abstractplay
             if (input.Gameobj.Gameover)
             {
                 input.Gamerec.Closed = true;
+
+                //Archive the game
+                List<GamesDataStates> allstates = db.GamesDataStates.Where(x => x.GameId.Equals(input.Gamerec.EntryId)).ToList();
+                allstates.Add(newstate);
+                JObject rec = JObject.FromObject(new
+                    {
+                        header = new
+                        {
+                            reportId = GuidGenerator.HelperBAToString(input.Gamerec.EntryId),
+                            game = new
+                            {
+                                id = GuidGenerator.HelperBAToString(input.Gamerec.GameMetaId),
+                                name = input.Gamerec.GameMeta.Name,
+                                variants = String.IsNullOrWhiteSpace(input.Gamerec.Variants) ? new string[0] : input.Gamerec.Variants.Split('\n'),
+                            },
+                            dates = new
+                            {
+                                start = allstates.First().Timestamp,
+                                end = allstates.Last().Timestamp
+                            },
+                            //Add `event` one day
+                            timeControl = String.Join('/', new string[] {input.Gamerec.ClockStart.ToString(), input.Gamerec.ClockInc.ToString(), input.Gamerec.ClockMax.ToString()}),
+                            players = input.Gameobj.Players,
+                            results = input.Gameobj.Results()
+                            //Add `termination` one day
+                        },
+                        moves = input.Gameobj.MovesArchive(allstates.Select(x => x.State).ToArray())
+                    }
+                );
+
+                GamesArchive archive = new GamesArchive
+                {
+                    ReportId = input.Gamerec.EntryId,
+                    Json = rec.ToString()
+                };
+                db.GamesArchive.Add(archive);
             }
         }
     }

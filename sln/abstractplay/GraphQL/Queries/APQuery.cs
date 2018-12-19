@@ -109,7 +109,7 @@ namespace abstractplay.GraphQL
             Field<ListGraphType<GamesDataType>>(
                 "games",
                 description: "All games in progress",
-                resolve: _ => db.GamesData.ToArray()
+                resolve: _ => db.GamesData.Where(x => x.Closed.Equals(false)).ToArray()
             );
         }
     }
