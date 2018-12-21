@@ -1,6 +1,7 @@
 using System;
 using abstractplay.Games;
 using abstractplay.DB;
+using abstractplay.GraphQL;
 using System.Linq;
 using Amazon.Lambda.Core;
 using Newtonsoft.Json;
@@ -24,6 +25,13 @@ namespace abstractplay
         public Game Gameobj;
         public GamesData Gamerec;
         public byte[] Mover;
+    }
+
+    public struct ExecuteCommandInput
+    {
+        public Game Gameobj;
+        public GamesData Gamerec;
+        public Consoles Console;
     }
 
     public static class DBFuncs
@@ -119,14 +127,17 @@ namespace abstractplay
                 db.GamesDataChats.Add(newchat);
             }
 
-            //Update clocks
-            var clock = db.GamesDataClocks.Single(x => x.GameId.Equals(input.Gamerec.EntryId) && x.OwnerId.Equals(input.Mover));
-            var newbank = clock.Bank + input.Gamerec.ClockInc;
-            if (newbank > input.Gamerec.ClockMax)
+            if (! input.Gameobj.Gameover)
             {
-                newbank = input.Gamerec.ClockMax;
+                //Update clocks
+                var clock = db.GamesDataClocks.Single(x => x.GameId.Equals(input.Gamerec.EntryId) && x.OwnerId.Equals(input.Mover));
+                var newbank = clock.Bank + input.Gamerec.ClockInc;
+                if (newbank > input.Gamerec.ClockMax)
+                {
+                    newbank = input.Gamerec.ClockMax;
+                }
+                clock.Bank = (short)newbank;
             }
-            clock.Bank = (short)newbank;
 
             //Update whoseturn
             db.GamesDataWhoseturn.RemoveRange(db.GamesDataWhoseturn.Where(x => x.GameId.Equals(input.Gamerec.EntryId)));
@@ -180,6 +191,88 @@ namespace abstractplay
                     Json = rec.ToString()
                 };
                 db.GamesArchive.Add(archive);
+            }
+        }
+
+        public static void ExecuteCommand(MyContext db, ExecuteCommandInput input)
+        {
+            var cmd = (ConsoleCommands)input.Console.Command;
+            //First check for unanimity
+            bool passed = true;
+            foreach (var vote in input.Console.ConsolesVotes)
+            {
+                if (! vote.Vote)
+                {
+                    passed = false;
+                    break;
+                }
+            }
+            if (! passed)
+            {
+                string chat = "";
+                switch (cmd)
+                {
+                    case ConsoleCommands.DRAW:
+                        chat = "The draw offer was rejected.";
+                        break;
+                    case ConsoleCommands.FREEZE:
+                        chat = "The request to freeze the clocks was rejected.";
+                        break;
+                    case ConsoleCommands.THAW:
+                        chat = "The request to thaw the clocks was rejected.";
+                        break;
+                    default:
+                        throw new ArgumentException("The console command was not recognized. This should never happen.");
+                }
+                var newchat = new GamesDataChats
+                {
+                    ChatId = GuidGenerator.GenerateSequentialGuid(),
+                    GameId = input.Gamerec.EntryId,
+                    Game = input.Gamerec,
+                    Message = chat
+                };
+                input.Gamerec.GamesDataChats.Add(newchat);
+            }
+            else
+            {
+                switch (cmd)
+                {
+                    case ConsoleCommands.DRAW:
+                        Game newobj = input.Gameobj.Draw();
+                        var args = new UpdateGameInput
+                        {
+                            Gameobj = newobj,
+                            Gamerec = input.Gamerec
+                        };
+                        UpdateGame(db, args);
+                        break;
+                    case ConsoleCommands.FREEZE:
+                        input.Gamerec.ClockFrozen = true;
+                        input.Gamerec.GamesDataChats.Add(
+                            new GamesDataChats
+                            {
+                                ChatId = GuidGenerator.GenerateSequentialGuid(),
+                                GameId = input.Gamerec.EntryId,
+                                Game = input.Gamerec,
+                                Message = "The clocks have been frozen."
+                            }
+                        );
+                        break;
+                    case ConsoleCommands.THAW:
+                        input.Gamerec.ClockFrozen = false;
+                        input.Gamerec.GamesDataChats.Add(
+                            new GamesDataChats
+                            {
+                                ChatId = GuidGenerator.GenerateSequentialGuid(),
+                                GameId = input.Gamerec.EntryId,
+                                Game = input.Gamerec,
+                                Message = "The clocks have been thawed."
+                            }
+                        );
+                        break;
+                    default:
+                        throw new ArgumentException("The console command was not recognized. This should never happen.");
+                }
             }
         }
     }

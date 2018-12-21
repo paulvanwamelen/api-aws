@@ -19,7 +19,11 @@ namespace abstractplay.GraphQL
                 description: "The user who posted the chat",
                 resolve: _ => ((GamesDataChats)_.Source).Owner
             );
-            Field(x => x.Timestamp).Name("timestamp").Description("The date and time the chat was posted");
+            Field<DateTimeGraphType>(
+                "timestamp",
+                "The date and time the chat was posted",
+                resolve: _ => ((GamesDataChats)_.Source).Timestamp
+            );
             Field(x => x.Message).Name("message").Description("The text of the chat message");
         }
     }

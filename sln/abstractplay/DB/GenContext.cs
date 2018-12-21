@@ -10,6 +10,8 @@ namespace abstractplay.DB
         public virtual DbSet<Announcements> Announcements { get; set; }
         public virtual DbSet<Challenges> Challenges { get; set; }
         public virtual DbSet<ChallengesPlayers> ChallengesPlayers { get; set; }
+        public virtual DbSet<Consoles> Consoles { get; set; }
+        public virtual DbSet<ConsolesVotes> ConsolesVotes { get; set; }
         public virtual DbSet<GamesArchive> GamesArchive { get; set; }
         public virtual DbSet<GamesData> GamesData { get; set; }
         public virtual DbSet<GamesDataChats> GamesDataChats { get; set; }
@@ -137,6 +139,89 @@ namespace abstractplay.DB
                     .WithMany(p => p.ChallengesPlayers)
                     .HasForeignKey(d => d.OwnerId)
                     .HasConstraintName("fk_entry2owner");
+            });
+
+            modelBuilder.Entity<Consoles>(entity =>
+            {
+                entity.HasKey(e => e.EntryId);
+
+                entity.ToTable("consoles");
+
+                entity.HasIndex(e => e.Command)
+                    .HasName("idx_type");
+
+                entity.HasIndex(e => e.OwnerId)
+                    .HasName("fk_console2owner");
+
+                entity.HasIndex(e => e.Timestamp)
+                    .HasName("idx_date");
+
+                entity.HasIndex(e => new { e.GameId, e.Command })
+                    .HasName("idx_uniquegame")
+                    .IsUnique();
+
+                entity.Property(e => e.EntryId).HasMaxLength(16);
+
+                entity.Property(e => e.Data).HasColumnType("varchar(255)");
+
+                entity.Property(e => e.GameId)
+                    .IsRequired()
+                    .HasMaxLength(16);
+
+                entity.Property(e => e.OwnerId)
+                    .IsRequired()
+                    .HasMaxLength(16);
+
+                entity.Property(e => e.Timestamp)
+                    .HasColumnType("timestamp")
+                    .HasDefaultValueSql("'current_timestamp()'");
+
+                entity.HasOne(d => d.Game)
+                    .WithMany(p => p.Consoles)
+                    .HasForeignKey(d => d.GameId)
+                    .HasConstraintName("fk_console2game");
+
+                entity.HasOne(d => d.Owner)
+                    .WithMany(p => p.Consoles)
+                    .HasForeignKey(d => d.OwnerId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_console2owner");
+            });
+
+            modelBuilder.Entity<ConsolesVotes>(entity =>
+            {
+                entity.HasKey(e => e.EntryId);
+
+                entity.ToTable("consoles_votes");
+
+                entity.HasIndex(e => e.ConsoleId)
+                    .HasName("fk_entry2console");
+
+                entity.HasIndex(e => e.Voter)
+                    .HasName("fk_voter2owner");
+
+                entity.Property(e => e.EntryId).HasMaxLength(16);
+
+                entity.Property(e => e.ConsoleId)
+                    .IsRequired()
+                    .HasMaxLength(16);
+
+                entity.Property(e => e.Vote).HasColumnType("bit(1)");
+
+                entity.Property(e => e.Voter)
+                    .IsRequired()
+                    .HasMaxLength(16);
+
+                entity.HasOne(d => d.Console)
+                    .WithMany(p => p.ConsolesVotes)
+                    .HasForeignKey(d => d.ConsoleId)
+                    .HasConstraintName("fk_entry2console");
+
+                entity.HasOne(d => d.VoterNavigation)
+                    .WithMany(p => p.ConsolesVotes)
+                    .HasForeignKey(d => d.Voter)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_voter2owner");
             });
 
             modelBuilder.Entity<GamesArchive>(entity =>

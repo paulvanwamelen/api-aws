@@ -236,6 +236,7 @@ namespace abstractplay.Games
             Ithaka obj = new Ithaka(this.Serialize());
             obj.gameover = true;
             obj.winner = null;
+            obj.lastmove = null;
             obj.chatmsgs.Add("The players called it a draw.");
             return obj;
         }

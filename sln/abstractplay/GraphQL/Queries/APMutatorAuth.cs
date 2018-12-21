@@ -25,6 +25,7 @@ namespace abstractplay.GraphQL
             GamesData(db);
             GamesMeta(db);
             Profiles(db);
+            Console(db);
         }
     }
 }

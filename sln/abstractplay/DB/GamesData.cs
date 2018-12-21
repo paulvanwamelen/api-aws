@@ -7,6 +7,7 @@ namespace abstractplay.DB
     {
         public GamesData()
         {
+            Consoles = new HashSet<Consoles>();
             GamesDataChats = new HashSet<GamesDataChats>();
             GamesDataClocks = new HashSet<GamesDataClocks>();
             GamesDataPlayers = new HashSet<GamesDataPlayers>();
@@ -25,6 +26,7 @@ namespace abstractplay.DB
         public bool ClockFrozen { get; set; }
 
         public virtual GamesMeta GameMeta { get; set; }
+        public virtual ICollection<Consoles> Consoles { get; set; }
         public virtual ICollection<GamesDataChats> GamesDataChats { get; set; }
         public virtual ICollection<GamesDataClocks> GamesDataClocks { get; set; }
         public virtual ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }

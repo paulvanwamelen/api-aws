@@ -82,6 +82,11 @@ namespace abstractplay.GraphQL
                 description: "The list of players who can currently move in this game",
                 resolve: _ => ((GamesData)_.Source).GamesDataWhoseturn.Select(x => (Owners)x.Owner).ToArray()
             );
+            Field<ListGraphType<ConsoleType>>(
+                "consoleCommands",
+                description: "All pending console commands attached to this game",
+                resolve: _ => ((GamesData)_.Source).Consoles.ToArray()
+            );
         }
     }
 }

@@ -63,14 +63,21 @@ namespace abstractplay.Games
             }
 
             List<List<string>> retlst = new List<List<string>>();
-            retlst.Add(new List<string>() {this.Winner});
-            foreach (var p in Players)
+            if (this.Winner != null)
             {
-                if (p != this.Winner)
+                retlst.Add(new List<string>() {this.Winner});
+                foreach (var p in Players)
                 {
-                    retlst.Add(new List<string>() {p});
-                    break;
+                    if (p != this.Winner)
+                    {
+                        retlst.Add(new List<string>() {p});
+                        break;
+                    }
                 }
+            }
+            else
+            {
+                retlst.Add(new List<string>(this.Players));
             }
             return retlst;
         }
