@@ -12,6 +12,7 @@ namespace abstractplay.DB
         public virtual DbSet<ChallengesPlayers> ChallengesPlayers { get; set; }
         public virtual DbSet<Consoles> Consoles { get; set; }
         public virtual DbSet<ConsolesVotes> ConsolesVotes { get; set; }
+        public virtual DbSet<Dms> Dms { get; set; }
         public virtual DbSet<GamesArchive> GamesArchive { get; set; }
         public virtual DbSet<GamesData> GamesData { get; set; }
         public virtual DbSet<GamesDataChats> GamesDataChats { get; set; }
@@ -222,6 +223,49 @@ namespace abstractplay.DB
                     .HasForeignKey(d => d.Voter)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("fk_voter2owner");
+            });
+
+            modelBuilder.Entity<Dms>(entity =>
+            {
+                entity.HasKey(e => e.EntryId);
+
+                entity.ToTable("dms");
+
+                entity.HasIndex(e => e.DateSent)
+                    .HasName("idx_date");
+
+                entity.HasIndex(e => e.ReceiverId)
+                    .HasName("fk_receiver2owner");
+
+                entity.HasIndex(e => e.SenderId)
+                    .HasName("fk_sender2owner");
+
+                entity.Property(e => e.EntryId).HasMaxLength(16);
+
+                entity.Property(e => e.DateSent).HasColumnType("datetime");
+
+                entity.Property(e => e.Message)
+                    .IsRequired()
+                    .HasColumnType("text");
+
+                entity.Property(e => e.Read).HasColumnType("bit(1)");
+
+                entity.Property(e => e.ReceiverId)
+                    .IsRequired()
+                    .HasMaxLength(16);
+
+                entity.Property(e => e.SenderId).HasMaxLength(16);
+
+                entity.HasOne(d => d.Receiver)
+                    .WithMany(p => p.DmsReceiver)
+                    .HasForeignKey(d => d.ReceiverId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_receiver2owner");
+
+                entity.HasOne(d => d.Sender)
+                    .WithMany(p => p.DmsSender)
+                    .HasForeignKey(d => d.SenderId)
+                    .HasConstraintName("fk_sender2owner");
             });
 
             modelBuilder.Entity<GamesArchive>(entity =>

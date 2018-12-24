@@ -11,6 +11,8 @@ namespace abstractplay.DB
             ChallengesPlayers = new HashSet<ChallengesPlayers>();
             Consoles = new HashSet<Consoles>();
             ConsolesVotes = new HashSet<ConsolesVotes>();
+            DmsReceiver = new HashSet<Dms>();
+            DmsSender = new HashSet<Dms>();
             GamesDataChats = new HashSet<GamesDataChats>();
             GamesDataClocks = new HashSet<GamesDataClocks>();
             GamesDataPlayers = new HashSet<GamesDataPlayers>();
@@ -33,6 +35,8 @@ namespace abstractplay.DB
         public virtual ICollection<ChallengesPlayers> ChallengesPlayers { get; set; }
         public virtual ICollection<Consoles> Consoles { get; set; }
         public virtual ICollection<ConsolesVotes> ConsolesVotes { get; set; }
+        public virtual ICollection<Dms> DmsReceiver { get; set; }
+        public virtual ICollection<Dms> DmsSender { get; set; }
         public virtual ICollection<GamesDataChats> GamesDataChats { get; set; }
         public virtual ICollection<GamesDataClocks> GamesDataClocks { get; set; }
         public virtual ICollection<GamesDataPlayers> GamesDataPlayers { get; set; }

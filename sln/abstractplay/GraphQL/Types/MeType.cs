@@ -59,6 +59,16 @@ namespace abstractplay.GraphQL
                 description: "The games in which you can currently move",
                 resolve: _ => ((Owners)_.Source).GamesDataWhoseturn.Select(x => (GamesData)x.Game).ToArray()
             );
+            Field<ListGraphType<DmsType>>(
+                "dms",
+                description: "List of direct messages received",
+                resolve: _ => ((Owners)_.Source).DmsReceiver.ToArray()
+            );
+            Field<ListGraphType<DmsType>>(
+                "newDms",
+                description: "List of unread direct messages",
+                resolve: _ => ((Owners)_.Source).DmsReceiver.Where(x => x.Read.Equals(false)).ToArray()
+            );
         }
     }
 }

@@ -59,10 +59,6 @@ namespace abstractplay.GraphQL
                         throw new ExecutionError("This game has ended. No further actions are possible.");
                     }
 
-                    LambdaLogger.Log("Found the following players:");
-                    LambdaLogger.Log(String.Join('\n', game.GamesDataPlayers.Select(x => GuidGenerator.HelperBAToString(x.OwnerId)).ToArray()));
-                    LambdaLogger.Log("Comparing to the logged-in user: " + GuidGenerator.HelperBAToString(user.OwnerId));
-
                     //For some reason, `.Any(x => x.OwnerId.Equals(user.OwnerId))` is not working. I don't know why yet.
                     if (! game.GamesDataPlayers.Select(x => x.Owner).Contains(user))
                     {
