@@ -8,12 +8,20 @@ The [main website](https://www.abstractplay.com) houses the development blog and
 
 ## Change log
 
-XX Dec 2018:
+25 Dec 2018:
 
 * Had to give up on the standalone games/AI server structure for now. [See development blog for details.](https://www.abstractplay.com)
   * `games-aws` repository has been archived.
   * Game code and tests have been moved into the API.
   * Games are now created synchronously by the GraphQL mutator.
+* Games are now created properly when challenges are filled.
+* You can now make moves in games, and games end and archive correctly. This includes resigning.
+* There will be no "Undo" feature. Instead, you can now preview your move before committing to it.
+* In-game chat is working.
+* The in-game console is functioning. You can freeze/thaw the clocks and agree to end a game in a draw.
+* Players can rank the games relative to each other. This will lead to a global rating of the various games. ([I wrote and published the ranking code.](https://github.com/Perlkonig/Condorcet))
+* Players can add tags to games.
+* Players can send direct messages to each other.
 
 28 Aug 2018:
 
