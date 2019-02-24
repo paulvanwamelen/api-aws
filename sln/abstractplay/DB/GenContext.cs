@@ -561,6 +561,8 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.PublisherId).HasMaxLength(16);
 
+                entity.Property(e => e.SampleRep).HasColumnType("text");
+
                 entity.Property(e => e.Shortcode)
                     .IsRequired()
                     .HasColumnType("varchar(25)");

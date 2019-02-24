@@ -19,6 +19,7 @@ namespace abstractplay.GraphQL
             Field(x => x.PlayerCounts).Name("playerCounts").Description("List of the different player counts the game supports");
             Field(x => x.Version).Name("version").Description("The current version number of the game code");
             Field(x => x.Changelog, nullable: true).Name("changelog").Description("Markdown-formatted log of changes made to the game code over time");
+            Field(x => x.SampleRep).Name("sampleRep").Description("JSON data representing a sample game state");
             Field<PublisherType>("publisher", resolve: _ => ((GamesMeta)_.Source).Publisher, description: "The game's publisher");
             Field<ListGraphType<VariantType>>("variants", resolve: _ => ((GamesMeta)_.Source).GamesMetaVariants.ToArray(), description: "The game's available variants (doesn't include built-in, universal variants)");
             Field<ListGraphType<StringGraphType>>(

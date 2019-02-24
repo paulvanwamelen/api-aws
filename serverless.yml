@@ -47,6 +47,7 @@ functions:
       - http:
           path: /graphql
           method: get
+          cors: true
           reqValidatorName: 'xRequestValidateQuery'
           request:
             parameters:
@@ -74,6 +75,7 @@ functions:
       - http:
           path: /graphqlauth
           method: get
+          cors: true
           authorizer:
             arn: ${file(../apsecrets.yml):cognitoarn}
           reqValidatorName: 'xRequestValidateQuery'
@@ -103,6 +105,7 @@ functions:
       - http:
           path: /graphqlauth
           method: post
+          cors: true
           authorizer:
             arn: ${file(../apsecrets.yml):cognitoarn}
           reqValidatorName: 'xRequestValidateBody'
@@ -118,6 +121,7 @@ functions:
       - http:
           path: /debug/guid
           method: get
+          cors: true
           authorizer:
             arn: ${file(../apsecrets.yml):cognitoarn}
           documentation:

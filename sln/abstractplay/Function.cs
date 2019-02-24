@@ -100,7 +100,11 @@ namespace abstractplay
             {
                 StatusCode = (int)HttpStatusCode.OK,
                 Body = json,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
+                Headers = new Dictionary<string, string> { 
+                    { "Content-Type", "application/json; charset=utf-8" },
+                    { "Access-Control-Allow-Origin", "*" },
+                    { "Access-Control-Allow-Credentials", "true" }
+                }
             };
 
             return response;
@@ -118,13 +122,19 @@ namespace abstractplay
                 query = request.QueryStringParameters["query"];
             } else if (request.HttpMethod == "POST")
             {
-                if (request.Headers["Content-Type"].ToLower() != "application/json")
+                // Commented this out because I was having problems with `graphql get-schema` not passing along Content-Type, or something like that.
+                // Need to do more research here.
+                if ( (! (request.Headers.ContainsKey("Content-Type"))) || (request.Headers["Content-Type"].ToLower() != "application/json") )
                 {
                     var r = new APIGatewayProxyResponse
                     {
                         StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
-                        Body = "This endpoint only accepts 'application/json' content",
-                        Headers = new Dictionary<string, string> { { "Content-Type", "text/plain; charset=utf-8" } }
+                        Body = "This endpoint only accepts content flagged as 'application/json'",
+                        Headers = new Dictionary<string, string> { 
+                            { "Content-Type", "text/plain; charset=utf-8" }, 
+                            { "Access-Control-Allow-Origin", "*" },
+                            { "Access-Control-Allow-Credentials", "true"}
+                        }
                     };
                     return r;
                 }
@@ -150,7 +160,11 @@ namespace abstractplay
             {
                 StatusCode = (int)HttpStatusCode.OK,
                 Body = json,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } }
+                Headers = new Dictionary<string, string> { 
+                    { "Content-Type", "application/json; charset=utf-8" }, 
+                    { "Access-Control-Allow-Origin", "*" },
+                    { "Access-Control-Allow-Credentials", "true"}
+                }
             };
 
             return response;

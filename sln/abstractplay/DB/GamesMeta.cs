@@ -27,6 +27,7 @@ namespace abstractplay.DB
         public string Version { get; set; }
         public string State { get; set; }
         public string Changelog { get; set; }
+        public string SampleRep { get; set; }
 
         public virtual GamesMetaPublishers Publisher { get; set; }
         public virtual ICollection<Challenges> Challenges { get; set; }
