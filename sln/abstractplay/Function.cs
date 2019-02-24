@@ -124,12 +124,17 @@ namespace abstractplay
             {
                 // Commented this out because I was having problems with `graphql get-schema` not passing along Content-Type, or something like that.
                 // Need to do more research here.
-                if ( (! (request.Headers.ContainsKey("Content-Type"))) || (request.Headers["Content-Type"].ToLower() != "application/json") )
+                Dictionary<string,string> headers = new Dictionary<string, string>(request.Headers, StringComparer.InvariantCultureIgnoreCase);
+                if ( (! (headers.ContainsKey("Content-Type"))) || (headers["Content-Type"].ToLower() != "application/json") )
                 {
+                    string headerDump = "";
+                    foreach (KeyValuePair<string,string> pair in request.Headers) {
+                        headerDump += pair.Key + ": " + pair.Value + "\n";
+                    }
                     var r = new APIGatewayProxyResponse
                     {
                         StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
-                        Body = "This endpoint only accepts content flagged as 'application/json'",
+                        Body = "This endpoint only accepts content flagged as 'application/json'. You sent the following headers:\n\n" + headerDump,
                         Headers = new Dictionary<string, string> { 
                             { "Content-Type", "text/plain; charset=utf-8" }, 
                             { "Access-Control-Allow-Origin", "*" },
