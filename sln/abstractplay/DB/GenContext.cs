@@ -73,7 +73,7 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.DateIssued)
                     .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'current_timestamp()'");
+                    .HasDefaultValueSql("current_timestamp");
 
                 entity.Property(e => e.GameId)
                     .IsRequired()
@@ -175,7 +175,7 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'current_timestamp()'");
+                    .HasDefaultValueSql("current_timestamp");
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.Consoles)
@@ -299,8 +299,9 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.GameMetaId)
                     .HasName("idx_gameid");
 
-                entity.HasIndex(e => e.Variants)
-                    .HasName("idx_variants");
+                // Shouldn't this be VariantID?
+                // entity.HasIndex(e => e.Variants)
+                //    .HasName("idx_variants");
 
                 entity.Property(e => e.EntryId).HasMaxLength(16);
 
@@ -332,8 +333,9 @@ namespace abstractplay.DB
                 entity.HasIndex(e => e.GameId)
                     .HasName("fk_chat2game");
 
-                entity.HasIndex(e => e.Message)
-                    .HasName("idx_msg");
+                // We won't ever search on the message, will we?
+                // entity.HasIndex(e => e.Message)
+                //    .HasName("idx_msg");
 
                 entity.HasIndex(e => e.OwnerId)
                     .HasName("fk_chat2player");
@@ -357,7 +359,7 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'current_timestamp()'")
+                    .HasDefaultValueSql("current_timestamp")
                     .ValueGeneratedOnAddOrUpdate();
 
                 entity.HasOne(d => d.Game)
@@ -460,7 +462,7 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'current_timestamp()'")
+                    .HasDefaultValueSql("current_timestamp")
                     .ValueGeneratedOnAddOrUpdate();
 
                 entity.HasOne(d => d.Game)
@@ -503,11 +505,12 @@ namespace abstractplay.DB
 
                 entity.ToTable("games_meta");
 
-                entity.HasIndex(e => e.Changelog)
-                    .HasName("idx_changelog");
+                // Surely not needed
+                // entity.HasIndex(e => e.Changelog)
+                //     .HasName("idx_changelog");
 
-                entity.HasIndex(e => e.Description)
-                    .HasName("idx_description");
+                // entity.HasIndex(e => e.Description)
+                //     .HasName("idx_description");
 
                 entity.HasIndex(e => e.IsLive)
                     .HasName("idx_istesting");
@@ -680,7 +683,7 @@ namespace abstractplay.DB
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'current_timestamp()'")
+                    .HasDefaultValueSql("current_timestamp")
                     .ValueGeneratedOnAddOrUpdate();
 
                 entity.HasOne(d => d.Game)
