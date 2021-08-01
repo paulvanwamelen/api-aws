@@ -34,7 +34,7 @@ namespace abstractplay.GraphQL
 
                     //Validate input
                     //check for duplicate cognitoId first
-                    if (db.Owners.Any(x => x.CognitoId.Equals(context.cognitoId)))
+                    if (db.Owners.Any(x => x.CognitoId.Equals(context.CognitoId)))
                     {
                         throw new ExecutionError("You already have an account. Use the `updateProfile` command to make changes to an existing profile.");
                     }
@@ -84,20 +84,21 @@ namespace abstractplay.GraphQL
                     DateTime now = DateTime.UtcNow;
                     byte[] ownerId = GuidGenerator.GenerateSequentialGuid();
                     byte[] playerId = Guid.NewGuid().ToByteArray();
-                    Owners owner = new Owners { 
-                        OwnerId = ownerId, 
-                        CognitoId = context.cognitoId, 
-                        PlayerId = playerId, 
-                        DateCreated = now, 
-                        ConsentDate = now, 
-                        Anonymous = profile.anonymous, 
-                        Country = profile.country, 
-                        Tagline = profile.tagline 
+                    Owners owner = new Owners {
+                        // OwnerId = ownerId,
+                        OwnerId = context.CognitoId,
+                        CognitoId = context.CognitoId,
+                        PlayerId = playerId,
+                        DateCreated = now,
+                        ConsentDate = now,
+                        Anonymous = profile.anonymous,
+                        Country = profile.country,
+                        Tagline = profile.tagline
                     };
-                    OwnersNames ne = new OwnersNames { 
-                        EntryId = GuidGenerator.GenerateSequentialGuid(), 
-                        OwnerId = ownerId, 
-                        EffectiveFrom = now, 
+                    OwnersNames ne = new OwnersNames {
+                        EntryId = GuidGenerator.GenerateSequentialGuid(),
+                        OwnerId = ownerId,
+                        EffectiveFrom = now,
                         Name = profile.name
                     };
                     owner.OwnersNames.Add(ne);
@@ -119,7 +120,7 @@ namespace abstractplay.GraphQL
                     // LambdaLogger.Log(JsonConvert.SerializeObject(input));
 
                     //Load profile first
-                    Owners rec = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    Owners rec = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (rec == null)
                     {
                         throw new ExecutionError("Could not find your profile. You need to do `createProfile` first.");
@@ -138,10 +139,10 @@ namespace abstractplay.GraphQL
                             throw new ExecutionError("The name you requested is either in use or has been recently used. Please choose a different one.");
                         }
                         DateTime now = DateTime.UtcNow;
-                        OwnersNames ne = new OwnersNames { 
-                            EntryId = GuidGenerator.GenerateSequentialGuid(), 
-                            OwnerId = rec.OwnerId, 
-                            EffectiveFrom = now, 
+                        OwnersNames ne = new OwnersNames {
+                            EntryId = GuidGenerator.GenerateSequentialGuid(),
+                            OwnerId = rec.OwnerId,
+                            EffectiveFrom = now,
                             Name = input.name
                         };
                         rec.OwnersNames.Add(ne);

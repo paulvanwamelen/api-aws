@@ -30,8 +30,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<MoveGameDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");
@@ -103,8 +103,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<MoveGameDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");
@@ -166,8 +166,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<NewChatDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can chat in games.");
@@ -212,7 +212,7 @@ namespace abstractplay.GraphQL
                 var context = (UserContext)_.UserContext;
                 var input = _.GetArgument<ResignGameDTO>("input");
 
-                var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                 if (user == null)
                 {
                     throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");

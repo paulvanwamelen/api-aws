@@ -9,9 +9,10 @@ namespace abstractplay.GraphQL
     {
         public MeType()
         {
-            Field<StringGraphType>("id", resolve: _ => GuidGenerator.HelperBAToString(((Owners)_.Source).OwnerId), description: "Your ID number");
+            // The MeType can't have the same ID as the UserType, so we prepend "Me-" here to make it unique (and so we can still parse out the "real" id in the fron end)
+            Field<StringGraphType>("id", resolve: _ => "Me-" + GuidGenerator.HelperBAToString(((Owners)_.Source).OwnerId), description: "Your ID number");
             Field<StringGraphType>(
-                "name", 
+                "name",
                 description: "Your current display name",
                 resolve: _ => ((Owners)_.Source).OwnersNames.OrderByDescending(x => x.EffectiveFrom).First().Name
             );
@@ -20,7 +21,7 @@ namespace abstractplay.GraphQL
             Field(x => x.Anonymous).Name("anonymous").Description("Whether your account is flagged as anonymous");
             Field(x => x.Tagline).Name("tagline").Description("your tagline");
             Field<ListGraphType<NameHistoryType>>(
-                "nameHistory", 
+                "nameHistory",
                 description: "Your past display names",
                 resolve: _ => ((Owners)_.Source).OwnersNames.ToArray()
             );
@@ -30,12 +31,12 @@ namespace abstractplay.GraphQL
                 resolve: _ => ((Owners)_.Source).GamesMetaRanks.ToArray()
             );
             Field<ListGraphType<TagType>>(
-                "tags", 
+                "tags",
                 description: "Tags you have applied",
                 resolve: _ => ((Owners)_.Source).GamesMetaTags.ToArray()
             );
             Field<ListGraphType<ChallengeType>>(
-                "challenges", 
+                "challenges",
                 description: "Challenges you have issued",
                 resolve: _ => ((Owners)_.Source).Challenges.ToArray()
             );

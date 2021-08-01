@@ -30,8 +30,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<UpdateTagsDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can tag games.");
@@ -91,8 +91,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<UpdateRankingsDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can rank games.");

@@ -25,8 +25,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<NewConsoleDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");
@@ -119,8 +119,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<WithdrawConsoleDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");
@@ -164,8 +164,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<VoteConsoleDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can play.");

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using GraphQL.Types;
 
@@ -10,10 +11,12 @@ namespace abstractplay.GraphQL
         public UserType()
         {
             Field<StringGraphType>("id", resolve: _ => GuidGenerator.HelperBAToString(((Owners)_.Source).OwnerId), description: "User's ID number");
+            // While we want want OwnerId to equal CognitoId, we have to use the BAToString below. TODO: Do we want OwnerId = CognitoId?
+            // Field<StringGraphType>("id", resolve: _ => (new Guid(((Owners)_.Source).OwnerId)).ToString(), description: "User's ID number");
             Field<StringGraphType>(
-                "name", 
+                "name",
                 description: "User's current display name",
-                resolve: _ => 
+                resolve: _ =>
                 {
                     var rec = (Owners)_.Source;
                     if (rec.Anonymous)
@@ -27,7 +30,7 @@ namespace abstractplay.GraphQL
             Field<DateGraphType>(
                 "created",
                 description: "The date this account was created",
-                resolve: _ => 
+                resolve: _ =>
                 {
                     var rec = (Owners)_.Source;
                     if (rec.Anonymous)
@@ -41,7 +44,7 @@ namespace abstractplay.GraphQL
             Field<StringGraphType>(
                 "country",
                 description: "The country the user says they're from",
-                resolve: _ => 
+                resolve: _ =>
                 {
                     var rec = (Owners)_.Source;
                     if (rec.Anonymous)
@@ -55,7 +58,7 @@ namespace abstractplay.GraphQL
             Field<StringGraphType>(
                 "tagline",
                 description: "The user's tagline",
-                resolve: _ => 
+                resolve: _ =>
                 {
                     var rec = (Owners)_.Source;
                     if (rec.Anonymous)
@@ -67,9 +70,9 @@ namespace abstractplay.GraphQL
                 }
             );
             Field<ListGraphType<NameHistoryType>>(
-                "nameHistory", 
+                "nameHistory",
                 description: "Past display names this player has used",
-                resolve: _ => 
+                resolve: _ =>
                 {
                     var rec = (Owners)_.Source;
                     if (rec.Anonymous)
@@ -81,9 +84,9 @@ namespace abstractplay.GraphQL
                 }
             );
             Field<ListGraphType<TagType>>(
-                "tags", 
+                "tags",
                 description: "The tags this user has applied",
-                resolve: _ => 
+                resolve: _ =>
                 {
                     var rec = (Owners)_.Source;
                     if (rec.Anonymous)
@@ -109,9 +112,9 @@ namespace abstractplay.GraphQL
                 }
             );
             Field<ListGraphType<ChallengeType>>(
-                "challenges", 
+                "challenges",
                 description: "Challenges this user has issued",
-                resolve: _ => 
+                resolve: _ =>
                 {
                     var rec = (Owners)_.Source;
                     if (rec.Anonymous)

@@ -43,15 +43,15 @@ namespace abstractplay.GraphQL
                         throw new ExecutionError("The number of players you requested ("+input.numPlayers.ToString() + ") is not supported by "+ game.Name +". Only the following are acceptable: " + game.PlayerCounts + ".");
                     }
                     //Set clock to default if necessary
-                    if ( (input.clockStart == null) || (input.clockStart < 1) ) 
+                    if ( (input.clockStart == null) || (input.clockStart < 1) )
                     {
                         input.clockStart = 72;
                     }
-                    if ( (input.clockInc == null) || (input.clockInc < 1) ) 
+                    if ( (input.clockInc == null) || (input.clockInc < 1) )
                     {
                         input.clockInc = 24;
                     }
-                    if ( (input.clockMax == null) || (input.clockMax < 1) ) 
+                    if ( (input.clockMax == null) || (input.clockMax < 1) )
                     {
                         input.clockMax = 240;
                     }
@@ -76,10 +76,25 @@ namespace abstractplay.GraphQL
                     }
 
                     //Build record
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
-                        throw new ExecutionError("You do not appear to have a user profile. You must create a profile before playing.");
+                        // Create a bare-bones profile...
+                        var name = new OwnersNames {
+                            OwnerId = context.CognitoId,
+                            Name = context.Username,
+                            EffectiveFrom = DateTime.Now,
+                            EntryId = GuidGenerator.GenerateSequentialGuid()
+                        };
+                        user = new Owners {
+                            CognitoId = context.CognitoId,
+                            OwnerId = context.CognitoId,
+                            PlayerId = context.CognitoId,
+                            DateCreated = name.EffectiveFrom,
+                            Anonymous = false,
+                            Tagline = ""
+                        };
+                        user.OwnersNames.Add(name);
                     }
                     byte[] challengeId = GuidGenerator.GenerateSequentialGuid();
                     var rec = new Challenges {
@@ -148,7 +163,7 @@ namespace abstractplay.GraphQL
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<RespondChallengeDTO>("input");
 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! You must create a profile before you can play.");
@@ -251,7 +266,7 @@ namespace abstractplay.GraphQL
                             try
                             {
                                 gameobj = GameFactory.CreateGame(challenge.Game.Shortcode, players, variants);
-                            } 
+                            }
                             catch (ArgumentException e)
                             {
                                 throw new ExecutionError("An error occurred while trying to create the game. Please alert the administrators. The game code said the following: " + e.Message);
@@ -283,7 +298,10 @@ namespace abstractplay.GraphQL
                         //Or someone else?
                         else
                         {
-                            db.ChallengesPlayers.Remove(player);
+                            challenge.ChallengesPlayers.Remove(player);
+                            // if only challenger remains, then no one wants to play.
+                            if (challenge.ChallengesPlayers.Count() == 1)
+                                db.Challenges.Remove(challenge);
                         }
                     }
                     db.SaveChanges();

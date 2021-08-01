@@ -25,8 +25,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<SendDmDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can send messages.");
@@ -79,8 +79,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<DeleteDmsDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can use the messaging system.");
@@ -101,8 +101,8 @@ namespace abstractplay.GraphQL
                 resolve: _ => {
                     var context = (UserContext)_.UserContext;
                     var input = _.GetArgument<ReadDmsDTO>("input");
- 
-                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.cognitoId));
+
+                    var user = db.Owners.SingleOrDefault(x => x.CognitoId.Equals(context.CognitoId));
                     if (user == null)
                     {
                         throw new ExecutionError("You don't appear to have a user account! Only registered users can use the messaging system.");

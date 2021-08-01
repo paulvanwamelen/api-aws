@@ -58,13 +58,22 @@ namespace abstractplay.Games
             public bool gameover;
             public string winner;
         };
+        public struct Board
+        {
+            public string style;
+            public int width;
+            public int height;
+        }
+        public struct PlayerPiece
+        {
+            public string name;
+            public int player;
+        }
         public struct Rendered
         {
-            public string spriteset;
-            public Dictionary<string, string> legend;
-            public string position;
-            public int boardwidth;
-            public string board;
+            public Board board;
+            public Dictionary<string, PlayerPiece> legend;
+            public string pieces;
         };
         private Regex re_validmove = new Regex(@"^([a-d][1-4])\-([a-d][1-4])$", RegexOptions.IgnoreCase);
 
@@ -143,11 +152,14 @@ namespace abstractplay.Games
         {
             Rendered data = new Rendered()
             {
-                spriteset = "generic",
-                legend = new Dictionary<string, string>() { { "R", "piece-red" }, { "B", "piece-blue" }, { "G", "piece-green" }, { "Y", "piece-yellow" } },
-                position = new string(board),
-                boardwidth = 4,
-                board = "checkered"
+                legend = new Dictionary<string, PlayerPiece>() {
+                        { "R", new PlayerPiece() { name = "piece", player = 1} },
+                        { "B", new PlayerPiece() { name = "piece", player = 2} },
+                        { "G", new PlayerPiece() { name = "piece", player = 3} },
+                        { "Y", new PlayerPiece() { name = "piece", player = 4} }
+                     },
+                pieces = new string(board),
+                board = new Board() { style = "squares-checkered", height = 4, width = 4 }
             };
             return JsonConvert.SerializeObject(data);
         }
@@ -349,7 +361,7 @@ namespace abstractplay.Games
                 }
             }
 
-            //Update currplayer 
+            //Update currplayer
             obj.currplayer = (obj.currplayer + 1) % obj.players.Length;
 
             return obj;
@@ -367,7 +379,7 @@ namespace abstractplay.Games
                 {
                     break;
                 }
-                var node = new 
+                var node = new
                 {
                     player = s1.Whoseturn()[0],
                     steps = new string[] {s2.lastmove}

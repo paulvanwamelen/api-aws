@@ -28,7 +28,7 @@ namespace abstractplay
         public string request;
         public string message;
     }
-    
+
     public struct MutateRequest
     {
         public string query;
@@ -86,6 +86,7 @@ namespace abstractplay
         public async Task<APIGatewayProxyResponse> GraphQL(APIGatewayProxyRequest request, ILambdaContext context)
         {
             string query = request.QueryStringParameters["query"];
+            LambdaLogger.Log($"query: {query}\n");
             var schema = new APSchemaRO(dbc);
             var result = await new DocumentExecuter().ExecuteAsync(_ =>
             {
@@ -96,11 +97,13 @@ namespace abstractplay
 
             var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
 
+            LambdaLogger.Log($"response: {json}\n");
+
             var response = new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
                 Body = json,
-                Headers = new Dictionary<string, string> { 
+                Headers = new Dictionary<string, string> {
                     { "Content-Type", "application/json; charset=utf-8" },
                     { "Access-Control-Allow-Origin", "*" },
                     { "Access-Control-Allow-Credentials", "true" }
@@ -120,6 +123,7 @@ namespace abstractplay
             {
                 schema = new APSchemaROAuth(dbc);
                 query = request.QueryStringParameters["query"];
+                LambdaLogger.Log($"query: {query}\n");
             } else if (request.HttpMethod == "POST")
             {
                 // Commented this out because I was having problems with `graphql get-schema` not passing along Content-Type, or something like that.
@@ -135,8 +139,8 @@ namespace abstractplay
                     {
                         StatusCode = (int)HttpStatusCode.UnsupportedMediaType,
                         Body = "This endpoint only accepts content flagged as 'application/json'. You sent the following headers:\n\n" + headerDump,
-                        Headers = new Dictionary<string, string> { 
-                            { "Content-Type", "text/plain; charset=utf-8" }, 
+                        Headers = new Dictionary<string, string> {
+                            { "Content-Type", "text/plain; charset=utf-8" },
                             { "Access-Control-Allow-Origin", "*" },
                             { "Access-Control-Allow-Credentials", "true"}
                         }
@@ -148,6 +152,9 @@ namespace abstractplay
                 query = (string)input.query.ToObject(typeof(string));
                 string varjson = JsonConvert.SerializeObject(input.variables);
                 vars = varjson.ToInputs();
+
+                LambdaLogger.Log($"query: {query}\n");
+                LambdaLogger.Log($"vars: {varjson}\n");
             }
 
             var result = await new DocumentExecuter().ExecuteAsync(_ =>
@@ -158,15 +165,16 @@ namespace abstractplay
                 _.UserContext = ucontext;
                 _.ExposeExceptions = true;
             }).ConfigureAwait(false);
-            
+
             var json = JsonConvert.SerializeObject(result, Formatting.Indented, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore });
+            LambdaLogger.Log($"response: {json}\n");
 
             var response = new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
                 Body = json,
-                Headers = new Dictionary<string, string> { 
-                    { "Content-Type", "application/json; charset=utf-8" }, 
+                Headers = new Dictionary<string, string> {
+                    { "Content-Type", "application/json; charset=utf-8" },
                     { "Access-Control-Allow-Origin", "*" },
                     { "Access-Control-Allow-Credentials", "true"}
                 }
@@ -195,6 +203,6 @@ namespace abstractplay
             };
 
             return response;
-        }        
+        }
     }
 }
